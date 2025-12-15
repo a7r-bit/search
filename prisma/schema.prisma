@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// model LikedDirectory {
+//   id          String    @id @default(uuid()) @db.Uuid
+//   userId      String    @map("user_id") @db.Uuid
+//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   directoryId String    @map("directory_id") @db.Uuid
+//   directory   Directory @relation(fields: [directoryId], references: [id], onDelete: Cascade)
+//   createdAt   DateTime  @default(now()) @map("created_at")
+//   updatedAt   DateTime  @updatedAt @map("updated_at")
+
+//   @@unique([userId, directoryId])
+//   @@map("liked_directory")
+// }
+
+// model DocumentVersion {
+//   id               String           @id @default(uuid()) @db.Uuid
+//   version          Int
+//   documentId       String           @map("document_id") @db.Uuid
+//   document         Document         @relation(fields: [documentId], references: [id])
+//   mediaFile        MediaFile?
+//   conversionStatus ConversionStatus @default(PENDING) @map("conversion_status")
+
+//   createdAt DateTime @default(now()) @map("created_at")
+//   updatedAt DateTime @updatedAt @map("updated_at")
+
+//   @@unique([version, documentId])
+//   @@map("document_versions")
+// }
+
+// model MediaFile {
+//   id                String           @id @default(uuid()) @db.Uuid
+//   filePath          String           @map("file_path")
+//   fileName          String           @map("file_name")
+//   extention         String
+//   documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+//   documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+//   createdAt DateTime @default(now()) @map("created_at")
+//   updatedAt DateTime @updatedAt @map("updated_at")
+
+//   @@map("media_file")
+// }
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  uidNumber    String        @unique @map("uidNumber")
+  firstName    String        @map("first_name")
+  middleName   String        @map("middle_name")
+  groups       String[]      @default([])
+  refreshToken RefreshToken?
+  role         Role[]
+  likedNodes   LikedNode[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @unique
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  roles     Role[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+// model Directory {
+//   id        String           @id @default(uuid()) @db.Uuid
+//   name      String
+//   parentId  String?          @map("parent_id") @db.Uuid
+//   parent    Directory?       @relation("DirectoryToDirectory", fields: [parentId], references: [id])
+//   children  Directory[]      @relation("DirectoryToDirectory")
+//   documents Document[]
+//   likedBy   LikedDirectory[]
+
+//   createdAt DateTime @default(now()) @map("created_at")
+//   updatedAt DateTime @updatedAt @map("updated_at")
+
+//   @@index([parentId])
+//   @@map("directories")
+// }
+
+enum NodeType {
+  DIRECTORY
+  DOCUMENT
+}
+
+enum ConversionStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+// -------------------
+// CORE MODEL: NODE
+// -------------------
+model Node {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        NodeType
+  parentId    String?  @map("parent_id") @db.Uuid
+  parent      Node?    @relation("NodeToNode", fields: [parentId], references: [id])
+  children    Node[]   @relation("NodeToNode")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  documentDetails       DocumentDetails?
+  likedBy               LikedNode[]
+  documentDetailsNodeId String?          @db.Uuid
+
+  @@unique([parentId, name])
+  @@index([parentId])
+  @@index([type])
+  @@map("nodes")
+}
+
+// -------------------
+// DETAILS
+// -------------------
+model DocumentDetails {
+  nodeId   String            @id @map("node_id") @db.Uuid
+  node     Node              @relation(fields: [nodeId], references: [id])
+  versions DocumentVersion[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("document_details")
+}
+
+model DocumentVersion {
+  id               String           @id @default(uuid()) @db.Uuid
+  version          Int
+  documentNodeId   String           @map("document_id") @db.Uuid
+  document         DocumentDetails  @relation(fields: [documentNodeId], references: [nodeId])
+  mediaFile        MediaFile?
+  conversionStatus ConversionStatus @default(PENDING) @map("conversion_status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([version, documentNodeId])
+  @@map("document_versions")
+}
+
+model MediaFile {
+  id                String           @id @default(uuid()) @db.Uuid
+  filePath          String           @map("file_path")
+  fileName          String           @map("file_name")
+  extention         String
+  documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("media_file")
+}
+
+model LikedNode {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  nodeId String @map("node_id") @db.Uuid
+  node   Node   @relation(fields: [nodeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("liked_nodes")
+}
+
+// model Document {
+//   id          String            @id @default(uuid()) @db.Uuid
+//   title       String
+//   description String?
+//   directoryId String            @map("directory_id") @db.Uuid
+//   directory   Directory         @relation(fields: [directoryId], references: [id])
+//   versions    DocumentVersion[]
+
+//   createdAt DateTime @default(now()) @map("created_at")
+//   updatedAt DateTime @updatedAt @map("updated_at")
+
+//   @@unique([title, directoryId])
+//   @@map("documents")
+// }
