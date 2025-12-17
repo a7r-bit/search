@@ -130,9 +130,6 @@ enum ConversionStatus {
   FAILED
 }
 
-// -------------------
-// CORE MODEL: NODE
-// -------------------
 model Node {
   id          String   @id @default(uuid()) @db.Uuid
   type        NodeType
@@ -144,9 +141,8 @@ model Node {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  documentDetails       DocumentDetails?
-  likedBy               LikedNode[]
-  documentDetailsNodeId String?          @db.Uuid
+  documentVersions DocumentVersion[]
+  likedBy          LikedNode[]
 
   @@unique([parentId, name])
   @@index([parentId])
@@ -157,29 +153,19 @@ model Node {
 // -------------------
 // DETAILS
 // -------------------
-model DocumentDetails {
-  nodeId   String            @id @map("node_id") @db.Uuid
-  node     Node              @relation(fields: [nodeId], references: [id])
-  versions DocumentVersion[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("document_details")
-}
 
 model DocumentVersion {
   id               String           @id @default(uuid()) @db.Uuid
   version          Int
-  documentNodeId   String           @map("document_id") @db.Uuid
-  document         DocumentDetails  @relation(fields: [documentNodeId], references: [nodeId])
+  nodeId           String           @map("node_id") @db.Uuid
+  node             Node             @relation(fields: [nodeId], references: [id])
   mediaFile        MediaFile?
   conversionStatus ConversionStatus @default(PENDING) @map("conversion_status")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([version, documentNodeId])
+  @@unique([version, nodeId])
   @@map("document_versions")
 }
 
@@ -209,6 +195,7 @@ model LikedNode {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([userId, nodeId])
   @@map("liked_nodes")
 }
 
