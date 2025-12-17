@@ -61,7 +61,7 @@ export class DocumentConversionProcessor extends WorkerHost {
             instanceToPlain(new DocumentVersionIndexDto(
                 text,
                 documentVersion.createdAt,
-                documentVersion.documentId,
+                documentVersion.nodeId,
                 documentVersion.mediaFile!.fileName,
                 documentVersion.mediaFile!.filePath,
                 documentVersion.version

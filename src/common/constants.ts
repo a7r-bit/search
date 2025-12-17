@@ -18,11 +18,6 @@ export const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY!;
 export const JWT_EXPIRES_IN_ACCESS = process.env.JWT_EXPIRES_IN_ACCESS ?? "15m";
 export const JWT_EXPIRES_IN_REFRESH = process.env.JWT_EXPIRES_IN_REFRESH ?? "7d";
 
-export enum ModelType {
-    Document = 'Document',
-    Directory = 'Directory',
-    DocumentVersion = 'DocumentVersion'
-}
 
 export enum ElasticTypes {
     Document = 'documents',
