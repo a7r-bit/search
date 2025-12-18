@@ -32,21 +32,22 @@ export class DocumentVersionController {
     @Get(':id/node')
     @ApiOperation({
         summary: 'Получение версий для конкретного документа',
-        description: `
-    Получение версий документов со ссылками на файл по переданному id документа`,
+        description: `Получение версий документов со ссылками на файл по переданному id документа`,
     })
-    @ApiSortingQuery(['version',
-        'createdAt',
-        'updatedAt',
-        'fileName'
-    ])
+    @ApiSortingQuery(
+        [
+            'version',
+            'createdAt',
+            'updatedAt',
+            'fileName'
+        ])
     @ApiParam({ name: "id", type: 'string', required: true, description: "UUID документа" })
     @ApiOkResponse({
         type: DocumentVersionDto,
         isArray: true,
         description: 'Список версий документа',
     })
-    async findByDocument(
+    async findByNodeId(
         @Param('id', new CustomParseUUIDPipe()) documentId: string,
         @Query() filterDto: DocumentVersionFilterDto,
         @SortingParams([...Object.values(DocumentVersionSortParamsEnum)]) sort?: SortingParam
@@ -80,7 +81,7 @@ export class DocumentVersionController {
     @Post()
     @ApiOperation({
         summary: 'Создание новой версии документа',
-        description: `Создание новой версии документа, передавая nodeId — ID node и файл.
+        description: `Создание новой версии документа, передавая nodeId и файл.
   Поддерживаемые типы файлов: .doc, .docx, .pdf. Максимальный размер — 5MB.`,
     })
     @ApiConsumes('multipart/form-data')
@@ -130,7 +131,6 @@ export class DocumentVersionController {
                 new CustomFileTypeValidator(/(application\/msword|application\/vnd.openxmlformats-officedocument.wordprocessingml.document|application\/pdf)$/),
                 new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5, message: `Размер файла не может превышать 5МБ` })
             ],
-
             exceptionFactory: (error) => new BadRequestException(error)
         })
     ) file: Express.Multer.File): Promise<DocumentVersionDto> {

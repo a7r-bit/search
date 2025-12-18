@@ -1,13 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
-import { DocumentVersionService, PathPart, PrismaService, SearchService } from 'src/modules';
+import { DocumentVersionService, PrismaService, SearchService } from 'src/modules';
 import { CreateNodeDto } from './dto/create-node.dto';
-import { NodeType, Prisma } from '@prisma/client';
+import { NodeType } from '@prisma/client';
 import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node.mapper';
 import { NodeDto } from './dto/node.dto';
 import { ElasticTypes } from 'src/common/constants';
 import { instanceToPlain } from 'class-transformer';
 import { NodeIndexDTO } from 'src/common/elasic-search-models';
+import { PathPart } from 'src/common/path-part.dto';
 
 @Injectable()
 export class NodeService {

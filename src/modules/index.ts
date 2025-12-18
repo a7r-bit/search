@@ -1,6 +1,5 @@
 export * from './auth';
 export * from './bullmq';
-export * from './directory';
 export * from './document-version';
 export * from './file-storage';
 export * from './gotenberg';
