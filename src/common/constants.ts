@@ -20,7 +20,7 @@ export const JWT_EXPIRES_IN_REFRESH = process.env.JWT_EXPIRES_IN_REFRESH ?? "7d"
 
 
 export enum ElasticTypes {
-    Document = 'documents',
+    Node = 'nodes',
     Directory = 'directories',
     DocumentVersion = 'document_versions'
 }

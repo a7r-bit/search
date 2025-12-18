@@ -3,10 +3,18 @@ services:
   app:
     env_file:
       - .env
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.dev
 
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+
+    
     develop:
       watch:
         - action: sync
@@ -19,7 +27,7 @@ services:
           target: /app/prisma
           ignore:
             - node_modules/
-        - action: rebuild
+        - action: restart
           path: package.json
 
     container_name: nest_app
@@ -27,7 +35,8 @@ services:
       - "3000:3000"
       - "5555:5555"
 
-    command: npm run start:dev
+    # command: npm run start:dev
+    command: sh -c "npm ci && npx prisma generate && npm run start:dev"
 
     depends_on:
       postgres:
@@ -56,10 +65,7 @@ services:
       REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY}
       JWT_EXPIRES_IN_ACCESS: ${JWT_EXPIRES_IN_ACCESS}
       JWT_EXPIRES_IN_REFRESH: ${JWT_EXPIRES_IN_REFRESH}
-    
-    volumes:
-      - ./uploads:/app/uploads
-    
+        
     networks:
       - appnet
   postgres:
@@ -139,7 +145,7 @@ services:
   elasticsearch:
     env_file:
       - .env
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.14
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     container_name: elasticsearch
 
     volumes:
@@ -153,8 +159,11 @@ services:
       - cluster.name=${CLUSTER_NAME}
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     networks:
       - appnet
 
