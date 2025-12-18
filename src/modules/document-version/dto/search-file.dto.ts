@@ -2,7 +2,7 @@ import { IsString } from "class-validator";
 
 export class SearchFileDto {
 
-    currentDirectoryId: string | null;
+    currentNodeId: string | null;
 
     @IsString()
     searchQuery: string;

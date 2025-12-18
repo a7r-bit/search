@@ -57,7 +57,7 @@ export class DocumentVersionController {
     @Post("search")
     async searchFile(
         @Body() query: SearchFileDto): Promise<DocumentVersionDto[]> {
-        return await this.documentVersionService.searchFile(query.currentDirectoryId, query.searchQuery);
+        return await this.documentVersionService.searchFile(query.currentNodeId, query.searchQuery);
     }
 
 

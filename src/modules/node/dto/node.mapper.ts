@@ -1,5 +1,6 @@
 import { NodeDto } from "./node.dto";
 
+
 export function toNodeDto(n: any): NodeDto {
     return {
         id: n.id,

@@ -116,7 +116,7 @@ export class DocumentVersionService {
                     {
                         multi_match: {
                             query: searchQuery,
-                            fields: ["fileName^2"],
+                            fields: ["fileName^2", "content"],
                             type: "best_fields"
                         }
                     }
@@ -126,9 +126,9 @@ export class DocumentVersionService {
                 ]
             }
         })
-        console.log(elasticResult.body.hits);
+        console.log(elasticResult);
 
-        const findedVersions = await this.findManyByIds(elasticResult.body.hits.hits.map(version => version._id))
+        const findedVersions = await this.findManyByIds(elasticResult.hits.hits.map(version => version._id))
         return findedVersions.map(version => new DocumentVersionDto(version));
     }
 
@@ -246,11 +246,10 @@ export class DocumentVersionService {
                 mediaFile: true,
             },
         });
-        //TODO                 documentId:!!! updatedDocumentVersion.nodeId,
         await this.searchService.updateDocument(ElasticTypes.DocumentVersion, updatedDocumentVersion.id,
             {
-                documentId: updatedDocumentVersion.nodeId,
-                filename: updatedDocumentVersion.mediaFile?.fileName,
+                nodeId: updatedDocumentVersion.nodeId,
+                fileName: updatedDocumentVersion.mediaFile?.fileName,
                 path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
                 version: updatedDocumentVersion.version
             })
@@ -265,10 +264,36 @@ export class DocumentVersionService {
         const deletedDocument = await this.prisma.documentVersion.delete({ where: { id }, include: { mediaFile: true }, })
         if (deletedDocument.mediaFile) {
             await this.fileStorageService.deleteFileFromDics(deletedDocument.mediaFile.filePath);
-            await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, deletedDocument.id);
         }
+        await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, deletedDocument.id);
 
         return new DocumentVersionDto(deletedDocument);
+    }
+
+    async removeByNodeId(nodeId: string): Promise<DocumentVersionDto[]> {
+        //TODO Перевести удаление файлов на BullMq
+        const node = await this.prisma.node.findUnique({ where: { id: nodeId } })
+        if (!node) {
+            throw new NotFoundException("Документ не найден");
+        }
+        const deletedDocuments = await this.prisma.documentVersion.findMany({ where: { nodeId: node.id }, include: { mediaFile: true }, })
+        await this.prisma.documentVersion.deleteMany({ where: { id: { in: deletedDocuments.map(doc => doc.id) } } })
+        for (const doc of deletedDocuments) {
+            if (doc.mediaFile) {
+                await this.fileStorageService.deleteFileFromDics(doc.mediaFile.filePath);
+            }
+            try {
+                await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
+            } catch (e) {
+                console.log({
+                    message: "DocumentVersionService: removeByNodeId",
+                    error: e,
+                })
+            }
+
+        }
+
+        return deletedDocuments.map(el => new DocumentVersionDto(el));
     }
 
 }

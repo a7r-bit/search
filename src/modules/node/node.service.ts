@@ -1,14 +1,21 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
-import { PathPart, PrismaService } from 'src/modules';
+import { DocumentVersionService, PathPart, PrismaService, SearchService } from 'src/modules';
 import { CreateNodeDto } from './dto/create-node.dto';
-import { NodeType } from '@prisma/client';
+import { NodeType, Prisma } from '@prisma/client';
 import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node.mapper';
 import { NodeDto } from './dto/node.dto';
+import { ElasticTypes } from 'src/common/constants';
+import { instanceToPlain } from 'class-transformer';
+import { NodeIndexDTO } from 'src/common/elasic-search-models';
 
 @Injectable()
 export class NodeService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly searchService: SearchService,
+        private readonly documentVersionService: DocumentVersionService,
+    ) { }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);
@@ -20,6 +27,12 @@ export class NodeService {
                 description: dto.description ?? null,
             }
         })
+        await this.searchService.indexDocument(ElasticTypes.Node, created.id, instanceToPlain(new NodeIndexDTO(
+            created.type,
+            created.parentId,
+            created.name,
+            created.description
+        )))
         return toNodeDto(created)
     }
 
@@ -86,6 +99,12 @@ export class NodeService {
                 description: dto.description
             }
         })
+        await this.searchService.updateDocument(ElasticTypes.Node, updated.id, instanceToPlain(new NodeIndexDTO(
+            updated.type,
+            updated.parentId,
+            updated.name,
+            updated.description
+        )))
         return toNodeDto(updated)
     }
 
@@ -115,24 +134,51 @@ export class NodeService {
             data: { parentId: newParentId }
         })
 
+        await this.searchService.updateDocument(ElasticTypes.Node, moved.id, instanceToPlain(new NodeIndexDTO(
+            moved.type,
+            moved.parentId,
+            moved.name,
+            moved.description
+        )))
         return toNodeDto(moved)
     }
 
     async delete(id: string) {
-        const node = await this.prisma.node.findUnique({ where: { id }, include: { documentVersions: true } });
+        const node = await this.prisma.node.findUnique({
+            where: { id }, include: { children: true }
+        });
         if (!node) {
             throw new NotFoundException(`Директория с id: ${id} не найдена`);
         }
-        throw new NotImplementedException("Удаление для связанных сущностей не реализованно")
 
-        return toNodeDto(node);
+        for (const childNode of node.children) {
+            await this.delete(childNode.id);
+        }
+
+        switch (node.type) {
+            case 'DIRECTORY': {
+
+            } break;
+            case 'DOCUMENT': {
+                await this.documentVersionService.removeByNodeId(node.id)
+            } break;
+            default: throw new NotImplementedException(`Удаление для Node типа: ${node.type} сущностей не реализованно`)
+        }
+
+        const deleteNode = await this.prisma.node.delete({ where: { id } })
+        try {
+            await this.searchService.deleteDocument(ElasticTypes.Node, node.id);
+        } catch (e) {
+            console.log(e);
+        }
+        return toNodeDto(deleteNode)
+
     }
 
 
-
-    /*
-    *   helpers
-    */
+    /**
+     *  helpers
+     */
 
     private async isUnique(parentId, nodeName): Promise<boolean> {
         const unique = await this.prisma.node.findFirst({ where: { name: nodeName, parentId: parentId } });
