@@ -34,7 +34,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
 
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: '/docs-json' },);
 
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 

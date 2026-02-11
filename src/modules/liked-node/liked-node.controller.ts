@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { LikedNodeService } from './liked-node.service';
 import { CustomParseUUIDPipe } from 'src/common/pipes';
-import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { NodeDto } from '../node/dto/node.dto';
 
 @Controller('liked-node')
@@ -33,10 +33,9 @@ export class LikedNodeController {
   @ApiOkResponse({
     type: NodeDto, description: "Успешный ответ",
   })
+  @ApiBody({ type: String, required: true, description: "nodeId" })
   async toggleLikedDir(@Req() req, @Body("nodeId", new CustomParseUUIDPipe()) nodeId: string
   ) {
-    console.log(req.user, nodeId);
-
     return await this.likedNodeService.toggleNode(req.user.id, nodeId);
   }
 }

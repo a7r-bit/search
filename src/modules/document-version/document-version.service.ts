@@ -11,7 +11,6 @@ import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
 import { SearchService } from '../search';
 import { ElasticTypes } from 'src/common/constants';
-import { instanceToPlain } from 'class-transformer';
 
 
 @Injectable()
@@ -70,66 +69,6 @@ export class DocumentVersionService {
         }
 
         return new DocumentVersionDto(foundVersion);
-    }
-
-
-
-    async searchFile(currentNodeId: string | null, searchQuery: string): Promise<DocumentVersionDto[]> {
-        console.log(currentNodeId, searchQuery);
-
-
-        // Получение текущей ноды и всех дочерних на 1-уровень в глубину
-        const nodes = await this.prisma.node.findMany({
-            where: {
-                type: 'DOCUMENT',
-                OR: [
-                    { parentId: currentNodeId },
-                    {
-                        parent: {
-                            type: 'DIRECTORY',
-                            parentId: currentNodeId
-                        }
-                    }
-                ]
-            },
-        });
-        console.log(nodes);
-
-
-        // Получение всех документов в ранее полученных директориях
-        // const documentsInDirectories = await this.documentService.findManyByDirectoryIds(directories.map(dir => dir.id));
-
-        const elasticResult: any = await this.searchService.search(ElasticTypes.DocumentVersion, {
-            bool: {
-                must: [
-                    {
-                        match: {
-                            "content": {
-                                query: searchQuery,
-                                fuzziness: "AUTO"
-
-                            }
-                        }
-                    },
-                ],
-                should: [
-                    {
-                        multi_match: {
-                            query: searchQuery,
-                            fields: ["fileName^2", "content"],
-                            type: "best_fields"
-                        }
-                    }
-                ],
-                filter: [
-                    { terms: { "nodeId": nodes.map(node => node.id) } }
-                ]
-            }
-        })
-        console.log(elasticResult);
-
-        const findedVersions = await this.findManyByIds(elasticResult.hits.hits.map(version => version._id))
-        return findedVersions.map(version => new DocumentVersionDto(version));
     }
 
 
@@ -283,7 +222,7 @@ export class DocumentVersionService {
                 await this.fileStorageService.deleteFileFromDics(doc.mediaFile.filePath);
             }
             try {
-                await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
+                await this.searchService.deleteDocument(ElasticTypes.Node, doc.id);
             } catch (e) {
                 console.log({
                     message: "DocumentVersionService: removeByNodeId",

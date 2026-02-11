@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { ElasticTypes } from 'src/common/constants';
+import { SearchResultDTO } from '../global-search/dto/search-result.dto';
+import { PrismaService } from '../prisma';
+import { filter } from 'rxjs';
 
 
 
@@ -16,12 +19,102 @@ import { ElasticTypes } from 'src/common/constants';
 
 @Injectable()
 export class SearchService {
-    constructor(private readonly elasticSearchService: ElasticsearchService) { }
+    constructor(private readonly elasticSearchService: ElasticsearchService, private readonly prisma: PrismaService) { }
 
-    async search<T>(index: ElasticTypes, query: Record<string, any>) {
+
+    async search<T>(searchQuery: string, allNodesId: (string | null)[]) {
+        const isShort = searchQuery.length <= 3;
+        const hasNull = allNodesId.includes(null);
+        const nodeIds = allNodesId.filter(
+            (id): id is string => id !== null
+        );
+
         return await this.elasticSearchService.search<T>({
-            index,
-            query
+            index: [ElasticTypes.Node, ElasticTypes.DocumentVersion],
+            size: 10,
+            query: {
+                bool: {
+                    must: [
+                        {
+                            multi_match: {
+                                query: searchQuery,
+                                fields: ['content^3', 'fileName^2', 'name^1', 'description^0.5'],
+                                ...(isShort ? {} : { fuzziness: 'AUTO' }),
+                            },
+                        },
+
+
+                    ],
+                    should: [
+                        {
+                            bool: {
+                                filter: [
+                                    { term: { _index: ElasticTypes.DocumentVersion } },
+                                    { terms: { nodeId: nodeIds } },
+
+                                ]
+                            }
+                        },
+                        {
+                            bool: {
+                                filter: [
+                                    { term: { _index: ElasticTypes.Node } },
+                                    {
+                                        bool: {
+                                            should: [
+                                                ...(nodeIds.length
+                                                    ? [{ terms: { parentId: nodeIds } }]
+                                                    : []),
+                                                ...(hasNull
+                                                    ? [
+                                                        {
+                                                            bool: {
+                                                                must_not: {
+                                                                    exists: { field: 'parentId' },
+                                                                },
+                                                            },
+                                                        },
+                                                    ]
+                                                    : []),
+                                            ],
+                                            minimum_should_match: 1,
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+
+                    minimum_should_match: 1
+                }
+
+            },
+
+            highlight: {
+                encoder: 'html',
+                type: "unified",
+                "pre_tags": ["<mark>"],
+                "post_tags": ["</mark>"],
+                "require_field_match": false,
+
+                fields: {
+                    "name": {
+                        "number_of_fragments": 0
+                    },
+                    "description": {
+                        "number_of_fragments": 0
+                    },
+                    "fileName": {
+                        "number_of_fragments": 0
+                    },
+                    "content": {
+                        "fragment_size": 90,
+                        "number_of_fragments": 1,
+                        "order": "score"
+                    }
+                }
+            }
+
         });
     };
 

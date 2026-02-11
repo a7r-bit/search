@@ -9,6 +9,8 @@ import { ElasticTypes } from 'src/common/constants';
 import { instanceToPlain } from 'class-transformer';
 import { NodeIndexDTO } from 'src/common/elasic-search-models';
 import { PathPart } from 'src/common/path-part.dto';
+import { noop } from 'rxjs';
+import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
 
 @Injectable()
 export class NodeService {
@@ -20,6 +22,7 @@ export class NodeService {
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);
+        await this.isUnique(dto);
         const created = await this.prisma.node.create({
             data: {
                 name: dto.name,
@@ -49,6 +52,7 @@ export class NodeService {
         const parts: PathPart[] = [];
 
         let currentId = id;
+
         while (currentId) {
             const node = await this.prisma.node.findUnique({
                 where: { id: currentId },
@@ -61,27 +65,26 @@ export class NodeService {
             currentId = node.parentId;
         }
 
-        // parts.unshift({ id: null, name: '...' });
+        parts.unshift({ id: null, name: '...' });
 
         return parts;
     }
 
+    async getRootPath(): Promise<PathPart[]> {
+        const parts: PathPart[] = [];
+        parts.unshift({ id: null, name: '...' });
+        return parts
+    }
 
-    async listChildren(parentId: string | null): Promise<NodeDto[]> {
+
+    async listChildren(parentId: string | null, sort?: SortingParam): Promise<NodeDto[]> {
         const nodes = await this.prisma.node.findMany({
             where: {
-                parentId: parentId ? parentId : null
+                parentId: parentId ? parentId : null,
+                // type: NodeType.DIRECTORY
             },
-            orderBy: [{ type: 'asc' }, { name: "asc" }],
-            select: {
-                id: true,
-                type: true,
-                name: true,
-                description: true,
-                parentId: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
+
 
         })
         return nodes.map(node => toNodeDto(node))
@@ -181,9 +184,23 @@ export class NodeService {
      *  helpers
      */
 
-    private async isUnique(parentId, nodeName): Promise<boolean> {
-        const unique = await this.prisma.node.findFirst({ where: { name: nodeName, parentId: parentId } });
-        return unique ? false : true
+    private async isUnique(dto: CreateNodeDto) {
+
+        const existing = await this.prisma.node.findFirst({
+            where: {
+                name: dto.name,
+                type: dto.type,
+                parentId: dto.parentId
+                    ? dto.parentId
+                    : { equals: null },
+            },
+            select: { id: true },
+        });
+        console.log({ existing: existing });
+
+        if (existing) {
+            throw new BadRequestException(`В текущей дикеткории уже существоет элемент с название: ${dto.name}`)
+        }
     }
 
 
@@ -201,6 +218,8 @@ export class NodeService {
         }
         return false
     }
+
+
 
     private async validateParent(parentId: string | null) {
         if (!parentId) return

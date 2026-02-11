@@ -12,3 +12,4 @@ export * from './pdf';
 export * from './search';
 export * from './liked-node';
 export * from './node';
+export * from './global-search';

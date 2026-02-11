@@ -13,7 +13,7 @@ import { SortingParams } from 'src/common/decorators/sorting-params.decorator';
 import { DocumentVersionSortParamsEnum } from './dto/document_version_sort_params_enum.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { ApiSortingQuery } from 'src/common/decorators/sorting-params-swagger.decorator';
-import { SearchFileDto } from './dto/search-file.dto';
+import { SearchFileDto } from '../global-search/dto/search-file.dto';
 @ApiBearerAuth('access-token')
 @Controller('document-versions')
 export class DocumentVersionController {
@@ -53,12 +53,6 @@ export class DocumentVersionController {
         @SortingParams([...Object.values(DocumentVersionSortParamsEnum)]) sort?: SortingParam
     ): Promise<DocumentVersionDto[]> {
         return await this.documentVersionService.findByNodeId(documentId, filterDto, sort);
-    }
-
-    @Post("search")
-    async searchFile(
-        @Body() query: SearchFileDto): Promise<DocumentVersionDto[]> {
-        return await this.documentVersionService.searchFile(query.currentNodeId, query.searchQuery);
     }
 
 

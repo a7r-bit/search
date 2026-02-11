@@ -86,7 +86,7 @@ model Node {
   documentVersions DocumentVersion[]
   likedBy          LikedNode[]
 
-  @@unique([parentId, name])
+  @@unique([parentId, name, type])
   @@index([parentId])
   @@index([type])
   @@map("nodes")

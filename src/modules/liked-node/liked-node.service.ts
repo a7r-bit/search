@@ -19,29 +19,33 @@ export class LikedNodeService {
 
 
 
+
     async toggleNode(userId: string, nodeId: string) {
+        const node = await this.prisma.node.findUnique({
+            where: { id: nodeId },
+        });
+        if (!node) {
+            throw new NotFoundException('Узел не найден');
+        }
+
         const existing = await this.prisma.likedNode.findUnique({
             where: { userId_nodeId: { userId, nodeId } },
             select: { id: true },
         });
-        if (existing) {
-            throw new NotFoundException("Директория не найдена")
-        }
 
         if (existing) {
-            const result = await this.prisma.likedNode.delete({
+            await this.prisma.likedNode.delete({
                 where: { userId_nodeId: { userId, nodeId } },
-                include: { node: true }
             });
-            return toNodeDto(result.node)
+            return toNodeDto(node);
         }
-        const result = await this.prisma.likedNode.create({
-            data: { userId, nodeId },
-            include: { node: true }
-        });
 
-        return toNodeDto(result.node)
+        await this.prisma.likedNode.create({
+            data: { userId, nodeId },
+        });
+        return toNodeDto(node);
     }
+
 
 
 

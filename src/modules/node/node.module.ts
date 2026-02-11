@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { NodeController } from './node.controller';
 import { NodeService } from './node.service';
 import { SearchModule } from '../search';

@@ -1,12 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { NodeService } from './node.service';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { ListNodesQueryDto } from './dto/list-nodes.query';
 import { CustomParseUUIDPipe } from 'src/common/pipes';
 import { MoveNodeDto, UpdateNodeDto } from './dto';
 import { NodeDto } from './dto/node.dto';
 import { PathPart } from 'src/common/path-part.dto';
+import type { SortingParam } from 'src/common/decorators/sorting-params.decorator';
+import { SortingParams } from 'src/common/decorators/sorting-params.decorator';
+import { NodeSortParamsEnum } from './dto/node_sort_params_enum.dto';
+import { ApiSortingQuery } from 'src/common/decorators/sorting-params-swagger.decorator';
 
 @Controller('node')
 export class NodeController {
@@ -32,9 +36,12 @@ export class NodeController {
     description: `
       Получение дочерних элементов директори`
   })
-  // @ApiQuery({ type: ListNodesQueryDto })
-  async findChildren(@Query() query: ListNodesQueryDto): Promise<NodeDto[]> {
-    return await this.nodeService.listChildren(query.parentId ?? null);
+  @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
+  async findChildren(
+    @Query() query: ListNodesQueryDto,
+    @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam
+  ): Promise<NodeDto[]> {
+    return await this.nodeService.listChildren(query.parentId ?? null, sort);
   }
 
   @Get(':id')
@@ -43,6 +50,7 @@ export class NodeController {
     description: 'Поиск Node по id.',
   })
   @ApiParam({ name: "id" })
+  @ApiResponse({ type: NodeDto })
   async findById(@Param('id', new CustomParseUUIDPipe()) id: string): Promise<NodeDto> {
     return await this.nodeService.findById(id);
   }
@@ -59,7 +67,7 @@ export class NodeController {
     return await this.nodeService.update(id, dto);
   }
 
-  @Post(':id/move')
+  @Put(':id/move')
   @ApiOperation({
     summary: "Поремещение Node",
     description: "Установление parentId по переданному id"
@@ -80,6 +88,13 @@ export class NodeController {
   })
   async getPath(@Param('id') id: string,): Promise<PathPart[]> {
     return await this.nodeService.getPath(id);
+  }
+  @Get('path/root')
+  @ApiOperation({
+    summary: "Получение пути к ролительским директориям",
+  })
+  async getRootPath(): Promise<PathPart[]> {
+    return await this.nodeService.getRootPath();
   }
 
   @Delete(':id')
