@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
-import { DocumentVersionService, PrismaService, SearchService } from 'src/modules';
+import { DocumentVersionService, ListNodesQueryDto, PrismaService, SearchService } from 'src/modules';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { NodeType } from '@prisma/client';
 import { UpdateNodeDto } from './dto/update-node.dto';
@@ -77,11 +77,12 @@ export class NodeService {
     }
 
 
-    async listChildren(parentId: string | null, sort?: SortingParam): Promise<NodeDto[]> {
+    async listChildren(query: ListNodesQueryDto, sort?: SortingParam): Promise<NodeDto[]> {
+        const { parentId, type } = query;
         const nodes = await this.prisma.node.findMany({
             where: {
                 parentId: parentId ? parentId : null,
-                // type: NodeType.DIRECTORY
+                ...(type && { type }),
             },
             orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
 

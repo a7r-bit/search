@@ -222,7 +222,7 @@ export class DocumentVersionService {
                 await this.fileStorageService.deleteFileFromDics(doc.mediaFile.filePath);
             }
             try {
-                await this.searchService.deleteDocument(ElasticTypes.Node, doc.id);
+                await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
             } catch (e) {
                 console.log({
                     message: "DocumentVersionService: removeByNodeId",

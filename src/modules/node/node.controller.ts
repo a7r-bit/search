@@ -41,7 +41,7 @@ export class NodeController {
     @Query() query: ListNodesQueryDto,
     @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam
   ): Promise<NodeDto[]> {
-    return await this.nodeService.listChildren(query.parentId ?? null, sort);
+    return await this.nodeService.listChildren(query, sort,);
   }
 
   @Get(':id')

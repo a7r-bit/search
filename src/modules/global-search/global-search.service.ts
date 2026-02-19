@@ -26,7 +26,6 @@ export class GlobalSearchService {
 
 
         const allNodesId = [...l1Ids, ...l2Ids, query.currentNodeId];
-        console.log(allNodesId);
 
 
 

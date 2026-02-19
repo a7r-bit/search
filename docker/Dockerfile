@@ -12,10 +12,6 @@ RUN npm ci
 
 COPY . .
 
-ENV CHOKIDAR_USEPOLLING=true
-ENV WATCHPACK_POLLING=true
-ENV CHOKIDAR_INTERVAL=1000
-
 EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]
