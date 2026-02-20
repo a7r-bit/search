@@ -1,0 +1,12 @@
+import * as Prisma from './internal/prismaNamespaceBrowser.js';
+export { Prisma };
+export * as $Enums from './enums.js';
+export * from './enums.js';
+export type User = Prisma.UserModel;
+export type Role = Prisma.RoleModel;
+export type Permission = Prisma.PermissionModel;
+export type RefreshToken = Prisma.RefreshTokenModel;
+export type Node = Prisma.NodeModel;
+export type DocumentVersion = Prisma.DocumentVersionModel;
+export type MediaFile = Prisma.MediaFileModel;
+export type LikedNode = Prisma.LikedNodeModel;

@@ -1,4 +1,5 @@
-import { NodeType } from "@prisma/client";
+
+import { NodeType } from "prisma/generated/prisma/enums";
 
 export class NodeIndexDTO {
     constructor(type: NodeType, parentId: string | null, name: string, description: string | null) {

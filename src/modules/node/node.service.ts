@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
 import { DocumentVersionService, ListNodesQueryDto, PrismaService, SearchService } from 'src/modules';
 import { CreateNodeDto } from './dto/create-node.dto';
-import { NodeType } from '@prisma/client';
 import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node.mapper';
 import { NodeDto } from './dto/node.dto';
@@ -11,6 +10,7 @@ import { NodeIndexDTO } from 'src/common/elasic-search-models';
 import { PathPart } from 'src/common/path-part.dto';
 import { noop } from 'rxjs';
 import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
+import { NodeType } from 'prisma/generated/prisma/enums';
 
 @Injectable()
 export class NodeService {

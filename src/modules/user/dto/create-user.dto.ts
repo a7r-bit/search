@@ -1,5 +1,5 @@
-import { Role } from "@prisma/client";
 import { IsNotEmpty, IsString, IsArray, IsJWT, IsOptional } from "class-validator";
+import { Role } from "src/generated/prisma/client";
 
 export class CreateUserDto {
 

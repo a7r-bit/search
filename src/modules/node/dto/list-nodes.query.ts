@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { NodeType } from "@prisma/client";
 import { IsOptional, IsString, IsUUID } from "class-validator";
+import { NodeType } from "prisma/generated/prisma/enums";
 
 export class ListNodesQueryDto {
     @ApiProperty({ description: "Node Id родительской Node" })

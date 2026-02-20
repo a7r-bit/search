@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Role, User } from '@prisma/client';
 import { UserWithRoles, UserWithRolesAndPermissions } from './types';
+import { User } from 'prisma/generated/prisma/browser';
+import { Prisma } from 'src/generated/prisma/browser';
 
 
 

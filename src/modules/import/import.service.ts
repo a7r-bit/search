@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateNodeDto, DocumentVersionService, NodeService, PrismaService } from 'src/modules';
 import { readdir, stat } from "node:fs/promises";
 import path from 'node:path';
-import { NodeType } from '@prisma/client';
+import { NodeType } from 'prisma/generated/prisma/enums';
 
 @Injectable()
 export class ImportService {

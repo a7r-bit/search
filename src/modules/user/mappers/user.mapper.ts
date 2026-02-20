@@ -7,10 +7,10 @@ export class UserMapper {
             uidNumber: user.uidNumber,
             firstName: user.firstName,
             middleName: user.middleName,
-            roles: user.role?.map(r => ({
+            roles: user.role?.map((r: any) => ({
                 id: r.id,
                 name: r.name,
-                permissions: r.permissions?.map(p => ({
+                permissions: r.permissions?.map((p: any) => ({
                     id: p.id,
                     name: p.name
                 }))

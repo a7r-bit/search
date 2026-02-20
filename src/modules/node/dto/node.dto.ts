@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { NodeType } from "@prisma/client";
+import { NodeType } from "prisma/generated/prisma/enums";
 
 export class NodeDto {
     @ApiProperty()

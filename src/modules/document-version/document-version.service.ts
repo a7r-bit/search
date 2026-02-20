@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { DocumentConversionService } from '../bullmq/document-conversion.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
@@ -11,7 +10,7 @@ import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
 import { SearchService } from '../search';
 import { ElasticTypes } from 'src/common/constants';
-import { Dirent } from 'fs';
+import { Prisma } from 'src/generated/prisma/browser';
 
 
 @Injectable()

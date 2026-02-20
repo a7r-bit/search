@@ -1,4 +1,4 @@
-import { NodeType } from "@prisma/client";
+import { NodeType } from "prisma/generated/prisma/enums";
 import { ElasticTypes } from "src/common/constants";
 
 export interface BaseSearchResultDTO {
@@ -28,13 +28,11 @@ function cleanHighlight(highlight: any) {
     }
     return cleaned;
 }
-// Специализация под nodes
 export interface NodeSearchResultDTO extends BaseSearchResultDTO {
     type: NodeType;
     name: string;
     description?: string;
 }
-// Специализация под document_versions
 export interface DocumentVersionSearchResultDTO extends BaseSearchResultDTO {
     version: number;
     fileName: string;
@@ -50,7 +48,6 @@ export function normalizeElasticHit(hit: any): SearchResultDTO {
     const id = hit._id;
     const score = hit._score;
     const highlight = cleanHighlight(hit.highlight) as BaseSearchResultDTO['highlight'] | undefined;
-    // const highlight = hit.highlight as BaseSearchResultDTO['highlight'] | undefined;
     const src = hit._source ?? {};
 
     switch (index) {
