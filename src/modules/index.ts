@@ -1,8 +1,5 @@
 export * from './auth';
 export * from './bullmq';
-export * from './directory';
-export * from './liked-directory';
-export * from './document';
 export * from './document-version';
 export * from './file-storage';
 export * from './gotenberg';
@@ -13,3 +10,7 @@ export * from './user';
 export * from './token';
 export * from './pdf';
 export * from './search';
+export * from './liked-node';
+export * from './node';
+export * from './global-search';
+export * from './import';

@@ -8,6 +8,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
   app.useGlobalPipes(new ValidationPipe({}))
 
   app.enableCors({
@@ -34,7 +37,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
 
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: '/docs-json' },);
 
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 

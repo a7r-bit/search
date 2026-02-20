@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsInt, IsNumber, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class UpdateDocumentVersionDto {
     @ApiProperty({ description: `Номер версии`, example: 1 })

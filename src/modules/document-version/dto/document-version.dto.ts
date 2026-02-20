@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ConversionStatus, DocumentVersion, MediaFile, Prisma, } from '@prisma/client';
+import { ConversionStatus, Prisma, } from '@prisma/client';
 import { MediaFileDto } from './media-file.dto';
-import { ModelType } from 'src/common/constants';
 
 type DocumentVersionWithFile = Prisma.DocumentVersionGetPayload<{
     include: { mediaFile: true };
@@ -9,11 +8,10 @@ type DocumentVersionWithFile = Prisma.DocumentVersionGetPayload<{
 
 
 export class DocumentVersionDto {
-    constructor(documentVersion: DocumentVersionWithFile, type: ModelType,) {
+    constructor(documentVersion: DocumentVersionWithFile,) {
         this.id = documentVersion.id
-        this.type = type
         this.version = documentVersion.version
-        this.documentId = documentVersion.documentId
+        this.nodeId = documentVersion.nodeId
         this.conversionStatus = documentVersion.conversionStatus
         this.mediaFile = documentVersion.mediaFile ? new MediaFileDto(documentVersion.mediaFile) : null
         this.createdAt = documentVersion.createdAt.toISOString()
@@ -24,18 +22,11 @@ export class DocumentVersionDto {
     @ApiProperty({ description: 'ID версии документа', type: String })
     id: string;
 
-    @ApiProperty({
-        description: 'Тип узла',
-        enum: ModelType,
-        example: ModelType.DocumentVersion,
-    })
-    type: ModelType;
-
     @ApiProperty({ description: 'Номер версии', type: Number })
     version: number;
 
     @ApiProperty({ description: 'ID документа', type: String })
-    documentId: string;
+    nodeId: string;
 
     @ApiProperty({ description: 'Статус конвертации', enum: ConversionStatus })
     conversionStatus: ConversionStatus;

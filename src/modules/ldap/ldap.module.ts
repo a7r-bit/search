@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { log } from 'console';
 import Strategy from 'passport-ldapauth';
 
 @Injectable()
