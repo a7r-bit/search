@@ -11,6 +11,7 @@ import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
 import { SearchService } from '../search';
 import { ElasticTypes } from 'src/common/constants';
+import { Dirent } from 'fs';
 
 
 @Injectable()
@@ -122,7 +123,7 @@ export class DocumentVersionService {
 
             const lastVersion = await this.getLastVersion(nodeId, tx);
             const newVersion = await tx.documentVersion.create({
-                data: { nodeId, version: lastVersion + 1, conversionStatus: isPDF ? 'DONE' : 'PENDING' },
+                data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
             });
             await tx.mediaFile.create({
                 data: {
@@ -138,7 +139,50 @@ export class DocumentVersionService {
                 include: { mediaFile: true },
             });
         });
-        await this.documentConversionService.addConversionJob(documentVersion.id, file.buffer, isPDF);
+        await this.documentConversionService.addConversionJob(documentVersion.id, savedFilePath, isPDF);
+
+        return new DocumentVersionDto(documentVersion)
+
+    }
+
+    async createFromPath(createDocumentVersionDto: CreateDocumentVersionDto, filePath: string): Promise<DocumentVersionDto> {
+        const { nodeId } = createDocumentVersionDto
+        const node = await this.prisma.node.findUnique({ where: { id: nodeId, type: 'DOCUMENT' } });
+        if (!node) {
+            throw new NotFoundException("Родительский докумет не найден")
+        }
+
+        const ext = path.extname(filePath).toLocaleLowerCase();
+
+        const isPDF = ext == ".pdf"
+        // const savedDir = isPDF ? "./uploads/converted" : "./uploads/original";
+
+
+        // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir)
+
+        const documentVersion = await this.prisma.$transaction(async (tx) => {
+
+            const lastVersion = await this.getLastVersion(nodeId, tx);
+
+            const newVersion = await tx.documentVersion.create({
+                data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
+            });
+
+            await tx.mediaFile.create({
+                data: {
+                    filePath: filePath,
+                    fileName: path.basename(filePath, ext),
+                    extention: ext,
+                    documentVersionId: newVersion.id,
+                }
+            })
+
+            return await tx.documentVersion.findUniqueOrThrow({
+                where: { id: newVersion.id },
+                include: { mediaFile: true },
+            });
+        });
+        await this.documentConversionService.addConversionJob(documentVersion.id, filePath, isPDF);
 
         return new DocumentVersionDto(documentVersion)
 
@@ -224,6 +268,41 @@ export class DocumentVersionService {
             try {
                 await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
             } catch (e) {
+                //Ошибка AxiosError: Request failed with status code 400
+                //     at settle (/app/node_modules/axios/lib/core/settle.js:19:12)
+                //     at IncomingMessage.handleStreamEnd (/app/node_modules/axios/lib/adapters/http.js:793:11)
+                //     at IncomingMessage.emit (node:events:536:35)
+                //     at endReadableNT (node:internal/streams/readable:1698:12)
+                //     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+                //     at Axios.request (/app/node_modules/axios/lib/core/Axios.js:45:41)
+                //     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+                //     at async GotenbergService.convertDocxToPdf (/app/src/modules/gotenberg/gotenberg.service.ts:19:21)
+                //     at async DocumentConversionProcessor.process (/app/src/modules/bullmq/document-conversion.processor.ts:41:15)
+                //     at async <anonymous> (/app/node_modules/bullmq/src/classes/worker.ts:878:26)
+                //     at async Worker.retryIfFailed (/app/node_modules/bullmq/src/classes/worker.ts:1247:16)
+                // {
+                //   message: 'DocumentVersionService: removeByNodeId',
+                //   error: ResponseError: {"_index":"document_versions","_id":"0634b7e5-42e2-4c4d-88d0-f623511c27bc","_version":1,"result":"not_found","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":119,"_primary_term":43}
+                //       at SniffingTransport._request (/app/node_modules/@elastic/transport/src/Transport.ts:606:17)
+                //       at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+                //       at async <anonymous> (/app/node_modules/@elastic/transport/src/Transport.ts:740:22)
+                //       at async SniffingTransport.request (/app/node_modules/@elastic/transport/src/Transport.ts:737:14)
+                //       at async ElasticsearchService.DeleteApi (/app/node_modules/@elastic/elasticsearch/src/api/api/delete.ts:71:10)
+                //       at async SearchService.deleteDocument (/app/src/modules/search/search.service.ts:139:16)
+                //       at async DocumentVersionService.removeByNodeId (/app/src/modules/document-version/document-version.service.ts:269:17)
+                //       at async NodeService.delete (/app/src/modules/node/node.service.ts:168:17)
+                //       at async NodeService.delete (/app/src/modules/node/node.service.ts:160:13)
+                //       at async NodeController.remove (/app/src/modules/node/node.controller.ts:106:12) {
+                //     options: { redaction: [Object] },
+                //     meta: {
+                //       body: [Object],
+                //       statusCode: 404,
+                //       headers: [Object],
+                //       meta: [Object],
+                //       warnings: null
+                //     }
+                //   }
+                // }
                 console.log({
                     message: "DocumentVersionService: removeByNodeId",
                     error: e,

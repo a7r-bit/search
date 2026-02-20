@@ -9,6 +9,7 @@ import { SearchService } from '../search';
 import { ElasticTypes } from 'src/common/constants';
 import { DocumentVersionIndexDto } from 'src/common/elasic-search-models';
 import { instanceToPlain } from 'class-transformer';
+import * as fs from 'node:fs/promises'
 
 
 
@@ -25,8 +26,8 @@ export class DocumentConversionProcessor extends WorkerHost {
     }
     private readonly logger = new Logger(DocumentConversionProcessor.name)
 
-    async process(job: Job<{ documentVersionId: string, buffer: Buffer, isPDF: boolean }>) {
-        const { documentVersionId, buffer, isPDF } = job.data
+    async process(job: Job<{ documentVersionId: string, filePath: string, isPDF: boolean }>) {
+        const { documentVersionId, filePath, isPDF } = job.data
         const mediaFile = await this.prisma.mediaFile.findUniqueOrThrow({ where: { documentVersionId } })
 
         await this.prisma.documentVersion.update({
@@ -36,10 +37,8 @@ export class DocumentConversionProcessor extends WorkerHost {
         });
 
         const pdfBuffer: Buffer = isPDF
-            ? Buffer.isBuffer(buffer)
-                ? buffer
-                : Buffer.from((buffer as any).data)
-            : await this.gotenbergService.convertDocxToPdf(mediaFile.filePath);
+            ? await fs.readFile(filePath)
+            : await this.gotenbergService.convertDocxToPdf(filePath);
         const outputFilePath = await this.fileStorageService.saveGeneratedFile(pdfBuffer, mediaFile.filePath);
         const text = await this.pdfService.extractTextFromPdfByBuffer(pdfBuffer);
 
@@ -78,11 +77,6 @@ export class DocumentConversionProcessor extends WorkerHost {
     @OnWorkerEvent("completed")
     async onCompleted(job: Job) {
         this.logger.log(`✔ Job ${job.data.documentVersionId} выполнена`);
-        await this.prisma.documentVersion.update({
-            where:
-                { id: job.data.documentVersionId },
-            data: { conversionStatus: 'DONE' }
-        });
     }
 
     @OnWorkerEvent("failed")

@@ -10,12 +10,11 @@ export class GotenbergService {
     private readonly baseUrl = process.env.GOTENBERG_URL || 'http://localhost:3001';
     async convertDocxToPdf(pathToFile: string): Promise<Buffer> {
 
-        const globalPath = join(".", pathToFile);
 
-        const file = await readFile(globalPath);
+        const file = await readFile(pathToFile);
 
         const form = new FormData();
-        form.append('files', file, { filename: basename(globalPath) });
+        form.append('files', file, { filename: basename(pathToFile) });
 
         const res = await axios.post(
             `${this.baseUrl}/forms/libreoffice/convert`,

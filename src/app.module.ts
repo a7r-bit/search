@@ -1,4 +1,4 @@
-import { AuthModule, RoleModule, UserModule, SearchModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule } from "./modules";
+import { AuthModule, RoleModule, UserModule, SearchModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule, ImportModule } from "./modules";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -11,7 +11,7 @@ import { NodeModule } from "./modules/node";
 
 
 @Module({
-  imports: [NodeModule, ConfigModule.forRoot({ isGlobal: true }), AuthModule, UserModule, RoleModule, TokenModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule/*DocumentModule, ,  LikedDirectoryModule, SearchModule*/],
+  imports: [NodeModule, ConfigModule.forRoot({ isGlobal: true }), AuthModule, UserModule, RoleModule, TokenModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule, ImportModule],
   controllers: [AppController],
   providers: [AppService,
     { provide: APP_GUARD, useClass: AccessGuard },

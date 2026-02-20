@@ -11,7 +11,6 @@ export class FileStorageService {
     }
 
     async saveGeneratedFile(file: Buffer, oldFilePath: string): Promise<string> {
-        console.log(file);
         const outputFilePath = path.join(
             'uploads',
             'converted',
