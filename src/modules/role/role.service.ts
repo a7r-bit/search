@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { GROUP_TO_ROLE } from 'src/common/constants';
-import { Role } from 'prisma/generated/prisma/browser';
+import { Role } from '../../generated/prisma/client';
+import { GROUP_TO_ROLE } from '../../common/constants';
 
 @Injectable()
 export class RoleService {

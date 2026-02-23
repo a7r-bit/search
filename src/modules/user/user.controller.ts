@@ -1,12 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { CustomParseUUIDPipe } from 'src/common/pipes/custom-parse-uuid.pipe';
-import { Scope } from 'src/common/decorators';
 import { FindUserQueryDto, UserDTO } from './dto';
 import { UserMapper } from './mappers';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CustomParseUUIDPipe } from '../../common/pipes';
+import { Scope } from '../../common/decorators/scope.decorator';
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) { }

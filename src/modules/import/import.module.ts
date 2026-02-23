@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ImportService } from './import.service';
 import { ImportController } from './import.controller';
-import { DocumentVersionModule, NodeModule } from 'src/modules';
+import { NodeModule } from '../node';
+import { DocumentVersionModule } from '../document-version';
 
 @Module({
   imports: [NodeModule, DocumentVersionModule],

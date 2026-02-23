@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MediaFile } from 'prisma/generated/prisma/browser';
+import { MediaFile } from '../../../generated/prisma/client';
 
 export class MediaFileDto {
     constructor(mediaFile: MediaFile) {

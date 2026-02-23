@@ -1,16 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
-import { DocumentVersionService, ListNodesQueryDto, PrismaService, SearchService } from 'src/modules';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node.mapper';
 import { NodeDto } from './dto/node.dto';
-import { ElasticTypes } from 'src/common/constants';
+import { PrismaService } from '../prisma';
+import { SearchService } from '../search';
+import { DocumentVersionService } from '../document-version';
+import { ElasticTypes } from '../../common/constants';
 import { instanceToPlain } from 'class-transformer';
-import { NodeIndexDTO } from 'src/common/elasic-search-models';
-import { PathPart } from 'src/common/path-part.dto';
-import { noop } from 'rxjs';
-import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
-import { NodeType } from 'prisma/generated/prisma/enums';
+import { SortingParam } from '../../common/decorators/sorting-params.decorator';
+import { NodeIndexDTO } from '../../common/elasic-search-models';
+import { PathPart } from '../../common/path-part.dto';
+import { NodeType } from '../../generated/prisma/enums';
+import { ListNodesQueryDto } from './dto';
 
 @Injectable()
 export class NodeService {

@@ -7,10 +7,10 @@ import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
-import { SortingParam } from 'src/common/decorators/sorting-params.decorator';
 import { SearchService } from '../search';
-import { ElasticTypes } from 'src/common/constants';
-import { Prisma } from 'src/generated/prisma/browser';
+import { Prisma } from '../../generated/prisma/client';
+import { ElasticTypes } from '../../common/constants';
+import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 
 
 @Injectable()

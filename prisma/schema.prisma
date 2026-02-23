@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -14,7 +7,7 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   uidNumber    String        @unique @map("uidNumber")
   firstName    String        @map("first_name")
   middleName   String        @map("middle_name")
@@ -29,7 +22,7 @@ model User {
 }
 
 model Role {
-  id          String       @id @default(uuid()) @db.Uuid
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String       @unique
   permissions Permission[]
   users       User[]
@@ -40,7 +33,7 @@ model Role {
 }
 
 model Permission {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
   roles     Role[]
   createdAt DateTime @default(now()) @map("created_at")
@@ -50,7 +43,7 @@ model Permission {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   token     String
   userId    String   @unique @map("user_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id])
@@ -72,7 +65,7 @@ enum ConversionStatus {
 }
 
 model Node {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type        NodeType
   parentId    String?  @map("parent_id") @db.Uuid
   parent      Node?    @relation("NodeToNode", fields: [parentId], references: [id])
@@ -96,7 +89,7 @@ model Node {
 // -------------------
 
 model DocumentVersion {
-  id               String           @id @default(uuid()) @db.Uuid
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   version          Int
   nodeId           String           @map("node_id") @db.Uuid
   node             Node             @relation(fields: [nodeId], references: [id], onDelete: Cascade)
@@ -111,7 +104,7 @@ model DocumentVersion {
 }
 
 model MediaFile {
-  id                String           @id @default(uuid()) @db.Uuid
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   filePath          String           @map("file_path")
   fileName          String           @map("file_name")
   extention         String
@@ -125,11 +118,9 @@ model MediaFile {
 }
 
 model LikedNode {
-  id String @id @default(uuid()) @db.Uuid
-
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @map("user_id") @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   nodeId String @map("node_id") @db.Uuid
   node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 

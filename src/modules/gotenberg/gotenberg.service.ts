@@ -7,7 +7,7 @@ import { basename, join } from 'path';
 @Injectable()
 export class GotenbergService {
 
-    private readonly baseUrl = process.env.GOTENBERG_URL || 'http://localhost:3001';
+    private readonly baseUrl = process.env.GOTENBERG_URL;
     async convertDocxToPdf(pathToFile: string): Promise<Buffer> {
 
 

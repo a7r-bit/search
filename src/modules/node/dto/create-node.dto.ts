@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
-import { NodeType } from "prisma/generated/prisma/enums";
+import { NodeType } from "../../../generated/prisma/client";
 
 export class CreateNodeDto {
     @ApiProperty({ description: "Тип node" })

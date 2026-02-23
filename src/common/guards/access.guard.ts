@@ -1,7 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { Request } from "express";
 import { PERMISSION_KEY, ROLE_KEY, USER_ID_KEY } from "../decorators";
-import { RoleService, TokenService, UserService } from "src/modules";
+import { TokenService } from "../../modules/token/token.service";
+import { RoleService } from "../../modules/role/role.service";
+import { UserService } from "../../modules/user/user.service";
 
 
 /*

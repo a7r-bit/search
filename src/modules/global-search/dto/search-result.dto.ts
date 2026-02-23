@@ -1,5 +1,5 @@
-import { NodeType } from "prisma/generated/prisma/enums";
-import { ElasticTypes } from "src/common/constants";
+import { ElasticTypes } from "../../../common/constants";
+import { NodeType } from "../../../generated/prisma/client";
 
 export interface BaseSearchResultDTO {
     id: string;

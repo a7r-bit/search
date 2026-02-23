@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MediaFileDto } from './media-file.dto';
-import { ConversionStatus, Prisma } from 'src/generated/prisma/browser';
+import { ConversionStatus, Prisma } from '../../../generated/prisma/client';
 
 type DocumentVersionWithFile = Prisma.DocumentVersionGetPayload<{
     include: { mediaFile: true };

@@ -39,8 +39,7 @@ async function bootstrap() {
 
   SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: '/docs-json' },);
 
-  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-
+  app.use('/uploads', express.static('/app/uploads'));
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

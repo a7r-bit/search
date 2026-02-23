@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PayloadDTO } from './dto/payload.dto';
-import { ACCESS_SECRET_KEY, JWT_EXPIRES_IN_ACCESS, JWT_EXPIRES_IN_REFRESH, REFRESH_SECRET_KEY } from 'src/common/constants';
 import { PrismaService } from '../prisma';
 import { UserService } from '../user';
+import { ACCESS_SECRET_KEY, JWT_EXPIRES_IN_ACCESS, JWT_EXPIRES_IN_REFRESH, REFRESH_SECRET_KEY } from '../../common/constants';
 
 @Injectable()
 export class TokenService {

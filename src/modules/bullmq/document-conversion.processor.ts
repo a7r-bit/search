@@ -6,10 +6,10 @@ import { GotenbergService } from '../gotenberg/gotenberg.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import { PdfService } from '../pdf/pdf.service';
 import { SearchService } from '../search';
-import { ElasticTypes } from 'src/common/constants';
-import { DocumentVersionIndexDto } from 'src/common/elasic-search-models';
 import { instanceToPlain } from 'class-transformer';
 import * as fs from 'node:fs/promises'
+import { ElasticTypes } from '../../common/constants';
+import { DocumentVersionIndexDto } from '../../common/elasic-search-models';
 
 
 

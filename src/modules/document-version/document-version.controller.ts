@@ -2,18 +2,15 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Upl
 import { DocumentVersionService } from './document-version.service';
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
-import { CustomParseUUIDPipe } from 'src/common/pipes/custom-parse-uuid.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
-import { CustomFileTypeValidator } from 'src/common/pipes/file-type-validator.pipe';
-import type { SortingParam } from 'src/common/decorators/sorting-params.decorator';
-import { SortingParams } from 'src/common/decorators/sorting-params.decorator';
 import { DocumentVersionSortParamsEnum } from './dto/document_version_sort_params_enum.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
-import { ApiSortingQuery } from 'src/common/decorators/sorting-params-swagger.decorator';
-import { SearchFileDto } from '../global-search/dto/search-file.dto';
+import { ApiSortingQuery } from '../../common/decorators/sorting-params-swagger.decorator';
+import { CustomFileTypeValidator, CustomParseUUIDPipe } from '../../common/pipes';
+import { SortingParam, SortingParams } from '../../common/decorators/sorting-params.decorator';
 @ApiBearerAuth('access-token')
 @Controller('document-versions')
 export class DocumentVersionController {

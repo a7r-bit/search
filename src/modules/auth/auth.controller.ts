@@ -1,10 +1,10 @@
 import { Controller, Post, UseGuards, Request, Body } from '@nestjs/common';
-import { LdapAuthGuard } from 'src/common/guards/ldap-auth.guard';
-import { LdapGroupGuard } from 'src/common/guards/ldap-group.guard';
 import { AuthService } from './auth.service';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { SignInUserResponse } from './dto/sign_in_user.dto';
 import { SignInDto } from './dto/sign_in.dto';
+import { LdapAuthGuard } from '../../common/guards/ldap-auth.guard';
+import { LdapGroupGuard } from '../../common/guards/ldap-group.guard';
 
 @Controller('auth')
 export class AuthController {

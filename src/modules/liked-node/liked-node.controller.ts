@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { LikedNodeService } from './liked-node.service';
-import { CustomParseUUIDPipe } from 'src/common/pipes';
 import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { NodeDto } from '../node/dto/node.dto';
+import { CustomParseUUIDPipe } from '../../common/pipes';
 
 @Controller('liked-node')
 export class LikedNodeController {

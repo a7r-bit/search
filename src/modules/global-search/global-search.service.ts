@@ -9,6 +9,7 @@ export class GlobalSearchService {
 
     constructor(private readonly prisma: PrismaService, private readonly searchService: SearchService) { }
     async globalSearch(query: SearchFileDto): Promise<SearchResultDTO[]> {
+        console.log(query);
 
         const l1Ids = await this.prisma.node.findMany({
             where: {
@@ -29,8 +30,9 @@ export class GlobalSearchService {
 
 
 
+        console.log(allNodesId);
         const elasticResult = await this.searchService.search(query.searchQuery, allNodesId);
-
+        console.log(elasticResult);
         const results = elasticResult.hits.hits.map((hit: any) =>
             normalizeElasticHit(hit));
         // hit);

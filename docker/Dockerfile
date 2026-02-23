@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache bash openssl
+RUN apk add postgresql-client
 
 WORKDIR /app
 

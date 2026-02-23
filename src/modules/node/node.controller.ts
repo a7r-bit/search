@@ -1,16 +1,15 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { NodeService } from './node.service';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { ListNodesQueryDto } from './dto/list-nodes.query';
-import { CustomParseUUIDPipe } from 'src/common/pipes';
 import { MoveNodeDto, UpdateNodeDto } from './dto';
 import { NodeDto } from './dto/node.dto';
-import { PathPart } from 'src/common/path-part.dto';
-import type { SortingParam } from 'src/common/decorators/sorting-params.decorator';
-import { SortingParams } from 'src/common/decorators/sorting-params.decorator';
 import { NodeSortParamsEnum } from './dto/node_sort_params_enum.dto';
-import { ApiSortingQuery } from 'src/common/decorators/sorting-params-swagger.decorator';
+import { ApiSortingQuery } from '../../common/decorators/sorting-params-swagger.decorator';
+import { SortingParams, SortingParam } from '../../common/decorators/sorting-params.decorator';
+import { PathPart } from '../../common/path-part.dto';
+import { CustomParseUUIDPipe } from '../../common/pipes';
 
 @Controller('node')
 export class NodeController {

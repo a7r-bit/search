@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
-import { ElasticTypes } from 'src/common/constants';
-import { SearchResultDTO } from '../global-search/dto/search-result.dto';
 import { PrismaService } from '../prisma';
-import { filter } from 'rxjs';
+import { ElasticTypes } from '../../common/constants';
 
 
 
