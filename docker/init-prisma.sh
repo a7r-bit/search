@@ -1,10 +1,9 @@
-#!/bin/sh
-set -e
+#!/bin/bash
 
-echo "Waiting for Postgres..."
-until pg_isready -h postgres -p 5432 -U postgres -d Search; do
-  sleep 1
-done
+# echo "Waiting for Postgres..."
+# until pg_isready -h postgres -p 5432 -U postgres -d Search; do
+#   sleep 1
+# done
 
 echo "Postgres is ready!"
 
