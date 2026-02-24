@@ -28,8 +28,6 @@ services:
       LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
 
     volumes:
-      - .:/app
-      - node_modules:/app/node_modules
       - ./uploads:/app/uploads
 
     ports:

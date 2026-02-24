@@ -24,4 +24,4 @@ ALTER TABLE refresh_tokens ALTER COLUMN id SET DEFAULT gen_random_uuid();
 EOSQL
 
 echo "Starting NestJS..."
-exec npm run start:dev
+exec npm run start:dev 
