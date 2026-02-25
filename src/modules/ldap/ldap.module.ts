@@ -2,31 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import Strategy from 'passport-ldapauth';
 
-// @Injectable()
-// export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
-//     constructor() {
-//         super({
-//             server: {
-//                 url: `ldap://${process.env.LDAP_HOST}:${process.env.LDAP_PORT}`,
-//                 bindDN: `${process.env.LDAP_ADMIN_DN}`,
-//                 bindCredentials: `${process.env.LDAP_ADMIN_PASSWORD}`,
-//                 searchBase: 'ou=users,dc=mycompany,dc=local',
-//                 searchFilter: '(uidNumber={{username}})',
-//             },
-//             usernameField: 'username',
-//             passwordField: 'password',
-//         });
-//     }
-
-//     async validate(user: any) {
-
-
-//         return user;
-//     }
-// }
-
-
-
 @Injectable()
 export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
     constructor() {
@@ -38,17 +13,6 @@ export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
                 bindCredentials: process.env.LDAP_ADMIN_PASSWORD,
                 searchBase: process.env.LDAP_USERS_DN,
                 searchFilter: '(uidNumber={{username}})',
-                // searchAttributes: [
-                //     'dn',
-                //     'cn',
-                //     'uidNumber',
-                //     'firstName',
-                //     'gidNumber',
-                //     'displayName',
-                //     'memberOf',
-                //     'department',
-                //     'title'
-                // ],
             },
             usernameField: 'username',
             passwordField: 'password',
