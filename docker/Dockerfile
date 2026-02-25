@@ -17,4 +17,4 @@ EXPOSE 3000
 RUN chmod +x ./docker/init-prisma.sh
 
 
-CMD ["sh", "./docker/init-prisma.sh"]
+ENTRYPOINT ["sh", "./docker/init-prisma.sh"]

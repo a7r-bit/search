@@ -161,19 +161,6 @@ services:
     networks:
       - appnet
 
-  nginx:
-    image: nginx:1.21.1
-    container_name: nginx
-    ports:
-      - 4000:4000
-    depends_on:
-      - app
-
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - appnet
-
 volumes:
   pgdata:
   node_modules:

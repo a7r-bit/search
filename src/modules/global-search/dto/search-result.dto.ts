@@ -69,7 +69,7 @@ export function normalizeElasticHit(hit: any): SearchResultDTO {
                 score,
                 highlight,
                 version: src.version,
-                fileUrl: '/' + src.path.replace(/\\/g, '/'),
+                fileUrl: '/' + src.path.replace(/\\/g, '/').replace(/^\/+/, ''),
                 fileName: src.fileName,
                 createdAt: src.createdAt
             };
