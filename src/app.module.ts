@@ -18,7 +18,7 @@ import { ScopeGuard } from "./common/guards/scope.guard";
 
 
 @Module({
-  imports: [NodeModule, ConfigModule.forRoot({ isGlobal: true }), AuthModule, UserModule, RoleModule, TokenModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule, ImportModule],
+  imports: [NodeModule, ConfigModule.forRoot({ isGlobal: true, envFilePath: ".env" }), AuthModule, UserModule, RoleModule, TokenModule, DocumentVersionModule, LikedNodeModule, GlobalSearchModule, ImportModule],
   controllers: [AppController],
   providers: [AppService,
     { provide: APP_GUARD, useClass: AccessGuard },
