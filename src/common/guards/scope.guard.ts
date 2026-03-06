@@ -14,7 +14,7 @@ export class ScopeGuard implements CanActivate {
     constructor(private reflector: Reflector) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        this.logger.debug("ScopeGuard guard", ScopeGuard.name)
+        this.logger.debug("ScopeGuard guard")
 
         const requiredScope = this.reflector.get<string>(SCOPE_KEY, context.getHandler());
         if (!requiredScope) return true;

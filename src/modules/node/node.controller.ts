@@ -126,5 +126,4 @@ export class NodeController {
     return await this.nodeService.delete(id);
   }
 }
-// export { NodeService };
 
