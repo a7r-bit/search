@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PrismaService } from '../prisma';
 import { NodeService } from '../node';
 import { DocumentVersionService } from '../document-version';
-import { NodeType } from '../../generated/prisma/client';
+import { NodeType } from '@prisma/client';
 
 @Injectable()
 export class ImportService {

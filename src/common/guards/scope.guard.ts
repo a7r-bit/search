@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { PERMISSION_KEY, ROLE_KEY, SCOPE_KEY } from "../decorators";
 /*
@@ -10,9 +10,12 @@ import { PERMISSION_KEY, ROLE_KEY, SCOPE_KEY } from "../decorators";
 */
 @Injectable()
 export class ScopeGuard implements CanActivate {
+    private readonly logger = new Logger(ScopeGuard.name)
     constructor(private reflector: Reflector) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
+        this.logger.debug("ScopeGuard guard", ScopeGuard.name)
+
         const requiredScope = this.reflector.get<string>(SCOPE_KEY, context.getHandler());
         if (!requiredScope) return true;
 
@@ -21,8 +24,11 @@ export class ScopeGuard implements CanActivate {
 
 
 
-        if (this.reflector.get<string>(ROLE_KEY, context.getHandler()).includes("Owner")) {
-            return true
+
+        const roles = this.reflector.get<string[]>(ROLE_KEY, context.getHandler());
+
+        if (roles?.includes("Owner")) {
+            return true;
         }
 
 

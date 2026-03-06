@@ -8,7 +8,7 @@ import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { SearchService } from '../search';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma } from '@prisma/client';
 import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 

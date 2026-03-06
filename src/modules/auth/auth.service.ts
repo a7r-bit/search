@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, Logger } from '@ne
 import { UserService } from '../user/user.service';
 import { RoleService } from '../role';
 import { PayloadDTO, TokenService } from '../token';
+import { PoliticService } from '../politic/politic.service';
+import { group } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -10,7 +12,9 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly roleService: RoleService,
-        private readonly tokenService: TokenService
+        private readonly tokenService: TokenService,
+        private readonly groupService: PoliticService
+
     ) { }
     async signIn(req: any) {
 
@@ -43,7 +47,8 @@ export class AuthService {
             });
         }
 
-        const payload: PayloadDTO = { id: user.id, activeRole: roles[0]?.name }
+        const politicGroups = await this.groupService.getPoliticsByUserId(user.id);
+        const payload: PayloadDTO = { id: user.id, activeRole: roles[0]?.name, politicGroups: politicGroups.map(g => g.id) }
         this.logger.warn("Вход в программу", payload)
 
 
@@ -62,6 +67,7 @@ export class AuthService {
                 activeRole: roles[0]?.name,
                 roles: roles.map(r => r.name),
             },
+
         };
     }
 
@@ -79,7 +85,9 @@ export class AuthService {
         if (!user.role.some(role => role.id == requiredRole.id)) {
             throw new ForbiddenException(`У пользователя нет доступа к роли ${roleName}`);
         }
-        const payload: PayloadDTO = { id: user.id, activeRole: requiredRole.name }
+        const politicGroups = await this.groupService.getPoliticsByUserId(user.id);
+
+        const payload: PayloadDTO = { id: user.id, activeRole: requiredRole.name, politicGroups: politicGroups.map(g => g.id) }
         this.logger.warn("Смена роли", payload)
 
 

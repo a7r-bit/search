@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ConversionStatus } from '../../../generated/prisma/client';
+import { ConversionStatus } from '@prisma/client';
 
 export class DocumentVersionFilterDto {
     @ApiPropertyOptional({ description: 'Фильтр по имени файла', example: 'Заключение' })

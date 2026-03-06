@@ -1,4 +1,4 @@
-import { NodeType } from "../../generated/prisma/client";
+import { NodeType } from "@prisma/client";
 
 
 export class NodeIndexDTO {

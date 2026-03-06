@@ -15,8 +15,9 @@ export class TokenService {
 
     private async generateAccessToken(payload: PayloadDTO): Promise<string> {
         return await this.jwtService.signAsync(payload, {
-            expiresIn: JWT_EXPIRES_IN_ACCESS,
-            secret: ACCESS_SECRET_KEY
+            expiresIn: JWT_EXPIRES_IN_ACCESS as any,
+            secret: ACCESS_SECRET_KEY,
+
         })
     }
 
@@ -24,16 +25,16 @@ export class TokenService {
         return await this.jwtService.signAsync(
             payload,
             {
-                expiresIn: JWT_EXPIRES_IN_REFRESH,
+                expiresIn: JWT_EXPIRES_IN_REFRESH as any,
                 secret: REFRESH_SECRET_KEY
             })
     }
 
-    async verifyAccessToken(access_token: string) {
+    async verifyAccessToken(access_token: string): Promise<PayloadDTO> {
         return await this.jwtService.verify(access_token, { secret: ACCESS_SECRET_KEY })
     }
 
-    async verifyRefreshToken(refresh_token: string) {
+    async verifyRefreshToken(refresh_token: string): Promise<PayloadDTO> {
         return await this.jwtService.verify(refresh_token, { secret: REFRESH_SECRET_KEY })
     }
 
@@ -49,14 +50,15 @@ export class TokenService {
             update: { token: refresh_token },
             create: { userId: payload.id, token: refresh_token }
         })
+        // const politics = await this.prisma.
 
         return { access_token: access_token, refresh_token: refresh_token }
     }
 
     async refreshTokens(refresh_token: string) {
         const payload: PayloadDTO = await this.decodeToken(refresh_token)
-        const newAccess = await this.generateAccessToken({ id: payload.id, activeRole: payload.activeRole })
-        const newRefresh = await this.generateRefreshToken({ id: payload.id, activeRole: payload.activeRole })
+        const newAccess = await this.generateAccessToken({ id: payload.id, activeRole: payload.activeRole, politicGroups: payload.politicGroups })
+        const newRefresh = await this.generateRefreshToken({ id: payload.id, activeRole: payload.activeRole, politicGroups: payload.politicGroups })
         const user = await this.userService.findOne(payload.id, { includeRoles: true });
         if (!user.role.map(r => r.name).includes(payload.activeRole)) {
             throw new BadRequestException(`Пользователь не имеет доступа к роли ${payload.activeRole}`)

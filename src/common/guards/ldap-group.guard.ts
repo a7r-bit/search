@@ -12,6 +12,7 @@ export class LdapGroupGuard implements CanActivate {
     private readonly logger = new Logger(LdapGroupGuard.name);
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
+        this.logger.debug("LdapGroupGuard guard", LdapGroupGuard.name)
         const request = context.switchToHttp().getRequest();
         const user = request.user;
 

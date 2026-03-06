@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import * as util from 'util';
+import { BadRequestException, Injectable, Logger, NotFoundException, NotImplementedException } from '@nestjs/common';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { UpdateNodeDto } from './dto/update-node.dto';
-import { toNodeDto } from './dto/node.mapper';
+import { toNodeDto } from './dto/node-dto.mapper';
 import { NodeDto } from './dto/node.dto';
 import { PrismaService } from '../prisma';
 import { SearchService } from '../search';
@@ -11,8 +12,10 @@ import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { NodeIndexDTO } from '../../common/elasic-search-models';
 import { PathPart } from '../../common/path-part.dto';
-import { NodeType } from '../../generated/prisma/enums';
-import { ListNodesQueryDto } from './dto';
+import { NodePermissionType, NodeType } from '@prisma/client';
+import { ListNodesQueryDto, toNodeWithPermissionsDto } from './dto';
+import { PoliticService } from '../politic/politic.service';
+import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 
 @Injectable()
 export class NodeService {
@@ -20,6 +23,7 @@ export class NodeService {
         private readonly prisma: PrismaService,
         private readonly searchService: SearchService,
         private readonly documentVersionService: DocumentVersionService,
+        private readonly politicService: PoliticService,
     ) { }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
@@ -79,21 +83,35 @@ export class NodeService {
     }
 
 
-    async listChildren(query: ListNodesQueryDto, sort?: SortingParam): Promise<NodeDto[]> {
+    async listChildren(query: ListNodesQueryDto, userReq: Object, sort?: SortingParam,): Promise<NodeWithPermissionsDto[]> {
         const { parentId, type } = query;
+        const result: NodeWithPermissionsDto[] = [];
+        const isOwner = userReq['activeRole'] === 'Owner';
+
         const nodes = await this.prisma.node.findMany({
             where: {
                 parentId: parentId ? parentId : null,
                 ...(type && { type }),
             },
             orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
-
-
         })
-        return nodes.map(node => toNodeDto(node))
+
+        for (const node of nodes) {
+            let permissions: NodePermissionType[];
+
+            if (isOwner) {
+                permissions = Object.values(NodePermissionType);
+            } else {
+                permissions = await this.politicService.resolveNodePermissions(userReq['politicGroups'], node.id);
+            }
+            result.push(toNodeWithPermissionsDto(toNodeDto(node), permissions));
+        }
+
+        return result
     }
 
     async update(id: string, dto: UpdateNodeDto): Promise<NodeDto> {
+
         const node = await this.prisma.node.findUnique({
             where: { id },
         });
@@ -106,12 +124,14 @@ export class NodeService {
                 description: dto.description
             }
         })
+
         await this.searchService.updateDocument(ElasticTypes.Node, updated.id, instanceToPlain(new NodeIndexDTO(
             updated.type,
             updated.parentId,
             updated.name,
             updated.description
         )))
+
         return toNodeDto(updated)
     }
 

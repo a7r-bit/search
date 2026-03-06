@@ -1,9 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { Request } from "express";
 import { PERMISSION_KEY, ROLE_KEY, USER_ID_KEY } from "../decorators";
 import { TokenService } from "../../modules/token/token.service";
 import { RoleService } from "../../modules/role/role.service";
 import { UserService } from "../../modules/user/user.service";
+import { PayloadDTO } from "../../modules/token";
 
 
 /*
@@ -29,9 +30,10 @@ export class AccessGuard implements CanActivate {
         private readonly userService: UserService,
     ) { }
 
+
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-
+        Logger.debug("Assecc guard", AccessGuard.name)
 
         Reflect.defineMetadata(ROLE_KEY, [], context.getHandler());
         Reflect.defineMetadata(PERMISSION_KEY, [], context.getHandler());
@@ -50,9 +52,10 @@ export class AccessGuard implements CanActivate {
             }
 
             try {
-                const payload = await this.tokenService.verifyAccessToken(token);
+                const payload: PayloadDTO = await this.tokenService.verifyAccessToken(token);
 
                 const userId = payload.id;
+                const politicGroups = payload.politicGroups;
                 const activeRole = await this.roleService.getRoleWithPermissions(payload.activeRole);
 
                 const user = await this.userService.findOne(userId, { includeRoles: true, includePermissions: true })
@@ -60,6 +63,7 @@ export class AccessGuard implements CanActivate {
                 request.user = {
                     id: user.id,
                     activeRole: activeRole.name,
+                    politicGroups
                 }
 
 

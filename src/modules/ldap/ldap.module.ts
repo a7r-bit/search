@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import Strategy from 'passport-ldapauth';
 
 @Injectable()
 export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
+    private readonly logger = new Logger(LdapStrategy.name);
     constructor() {
         super({
             server: {
@@ -20,7 +21,7 @@ export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
     }
 
     async validate(user: any) {
-        console.log(user);
+        this.logger.log(user);
 
         return user;
     }

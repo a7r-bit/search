@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, IsUUID } from "class-validator";
+import { IsArray, IsNotEmpty, IsString, IsUUID } from "class-validator";
 
 export class PayloadDTO {
     @IsString()
@@ -9,4 +9,8 @@ export class PayloadDTO {
 
     @IsString()
     activeRole: string
+
+    @IsArray()
+    @IsString({ each: true })
+    politicGroups: string[]
 }

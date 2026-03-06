@@ -5,10 +5,11 @@ import { LdapStrategy } from '../ldap/ldap.module';
 import { UserModule } from '../user/user.module';
 import { RoleModule } from '../role';
 import { TokenModule } from '../token';
+import { PoliticModule } from '../politic/politic.module';
 
 @Module({
   controllers: [AuthController,],
-  imports: [UserModule, RoleModule, TokenModule],
+  imports: [UserModule, RoleModule, TokenModule, PoliticModule],
   providers: [AuthService, LdapStrategy],
 })
 export class AuthModule { }

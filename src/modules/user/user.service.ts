@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserWithRoles, UserWithRolesAndPermissions } from './types';
-import { Prisma, User } from '../../generated/prisma/client';
+import { Prisma, User } from '@prisma/client';
 
 
 

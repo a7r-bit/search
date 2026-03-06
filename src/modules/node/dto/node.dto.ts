@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { NodeType } from "../../../generated/prisma/client";
+import { NodePermissionType, NodeType } from "@prisma/client";
 
 export class NodeDto {
     @ApiProperty()
@@ -14,6 +14,9 @@ export class NodeDto {
     name: string;
     @ApiProperty({ nullable: true })
     description: string | null;
+
+    // @ApiProperty({ enum: NodePermissionType, isArray: true })
+    // permissions: NodePermissionType[];
 
     @ApiProperty()
     createdAt: Date;
