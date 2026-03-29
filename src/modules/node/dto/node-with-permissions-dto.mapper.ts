@@ -1,7 +1,6 @@
-import { NodePermissionType } from "@prisma/client";
-import { NodeDto } from "./node.dto";
-import { NodeWithPermissionsDto } from "./node-with-permissions.dto";
-
+import { NodePermissionType } from '@prisma/client';
+import { NodeDto } from './node.dto';
+import { NodeWithPermissionsDto } from './node-with-permissions.dto';
 
 export function toNodeWithPermissionsDto(nodeDto: NodeDto, permissions: NodePermissionType[]): NodeWithPermissionsDto {
     return {
@@ -12,6 +11,6 @@ export function toNodeWithPermissionsDto(nodeDto: NodeDto, permissions: NodePerm
         description: nodeDto.description ?? null,
         createdAt: nodeDto.createdAt,
         updatedAt: nodeDto.updatedAt,
-        permissions
+        permissions,
     };
 }

@@ -3,11 +3,11 @@ import { MediaFile } from '@prisma/client';
 
 export class MediaFileDto {
     constructor(mediaFile: MediaFile) {
-        this.id = mediaFile.id
-        this.fileUrl = '/' + mediaFile.filePath.replace(/\\/g, '/')
-        this.fileName = mediaFile.fileName
-        this.extention = mediaFile.extention
-        this.documentVersionId = mediaFile.documentVersionId
+        this.id = mediaFile.id;
+        this.fileUrl = '/' + mediaFile.filePath.replace(/\\/g, '/');
+        this.fileName = mediaFile.fileName;
+        this.extention = mediaFile.extention;
+        this.documentVersionId = mediaFile.documentVersionId;
     }
 
     @ApiProperty({ description: 'ID файла', type: String })
@@ -19,14 +19,16 @@ export class MediaFileDto {
     @ApiProperty({ description: 'Имя файла без расширения', type: String })
     fileName: string;
 
-    @ApiProperty({ description: 'Расширение файла (например, pdf, docx)', type: String })
+    @ApiProperty({
+        description: 'Расширение файла (например, pdf, docx)',
+        type: String,
+    })
     extention: string;
 
-    @ApiProperty({ description: 'ID версии документа, к которой привязан файл', type: String, nullable: true })
+    @ApiProperty({
+        description: 'ID версии документа, к которой привязан файл',
+        type: String,
+        nullable: true,
+    })
     documentVersionId: string | null;
-
-
-
-
-
 }

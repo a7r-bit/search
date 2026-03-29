@@ -1,1 +1,1 @@
-export * from "./ldap.module"
+export * from './ldap.module';

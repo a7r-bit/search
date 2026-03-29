@@ -4,10 +4,10 @@ import { ImportDirectoryDto } from './dto/import-directory.dto';
 
 @Controller('import')
 export class ImportController {
-  constructor(private readonly importService: ImportService) { }
+    constructor(private readonly importService: ImportService) {}
 
-  @Post()
-  async importDirectory(@Body() dto: ImportDirectoryDto) {
-    return await this.importService.importDirectory(dto.path, dto.parentNodeId)
-  }
+    @Post()
+    async importDirectory(@Body() dto: ImportDirectoryDto) {
+        return await this.importService.importDirectory(dto.path, dto.parentNodeId);
+    }
 }

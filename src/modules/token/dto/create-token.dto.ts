@@ -1,11 +1,11 @@
-import { IsJWT, IsString, IsUUID } from "class-validator"
+import { IsJWT, IsString, IsUUID } from 'class-validator';
 
 export class CreateTokenDTO {
     @IsString()
     @IsJWT()
-    token: string
+    token: string;
 
     @IsString()
     @IsUUID()
-    userId: string
+    userId: string;
 }

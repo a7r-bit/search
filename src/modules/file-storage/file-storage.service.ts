@@ -7,20 +7,16 @@ export class FileStorageService {
         const fileName = `${Date.now()}${path.extname(file.originalname)}`;
         const filePath = path.join(directoryToSave, fileName);
         await fs.writeFile(filePath, file.buffer);
-        return filePath
+        return filePath;
     }
 
     async saveGeneratedFile(file: Buffer, oldFilePath: string): Promise<string> {
-        const outputFilePath = path.join(
-            'uploads',
-            'converted',
-            `${path.basename(oldFilePath, path.extname(oldFilePath))}.pdf`
-        );
+        const outputFilePath = path.join('uploads', 'converted', `${path.basename(oldFilePath, path.extname(oldFilePath))}.pdf`);
         await fs.writeFile(outputFilePath, file);
-        return outputFilePath
+        return outputFilePath;
     }
 
-    async deleteFileFromDics(path: string): Promise<void> {
+    async deleteFileFromDisk(path: string): Promise<void> {
         try {
             await fs.rm(path, { force: true });
         } catch (error) {
@@ -31,11 +27,8 @@ export class FileStorageService {
     }
 
     async convertOriginalName(fileName: string): Promise<string> {
-
         const buffer = Buffer.from(fileName, 'latin1');
 
         return buffer.toString();
-
     }
-
 }

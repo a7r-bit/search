@@ -3,22 +3,18 @@ import { PrismaService } from '../prisma';
 import { toNodeDto } from '../node/dto';
 @Injectable()
 export class LikedNodeService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async getMyLikedNodes(userId: string) {
         const nodes = await this.prisma.likedNode.findMany({
             where: {
                 userId,
             },
-            orderBy: { createdAt: "desc" },
-            include: { node: true }
-        })
-        return nodes.map(like => toNodeDto(like.node))
+            orderBy: { createdAt: 'desc' },
+            include: { node: true },
+        });
+        return nodes.map((like) => toNodeDto(like.node));
     }
-
-
-
-
 
     async toggleNode(userId: string, nodeId: string) {
         const node = await this.prisma.node.findUnique({
@@ -45,8 +41,4 @@ export class LikedNodeService {
         });
         return toNodeDto(node);
     }
-
-
-
-
 }

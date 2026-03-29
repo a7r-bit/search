@@ -17,27 +17,24 @@ Logger.log(`BullMQ → Redis host: ${process.env.REDIS_HOST}, port: ${process.en
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
-
                 const host = config.get<string>('REDIS_HOST');
                 const port = config.get<number>('REDIS_PORT');
-
 
                 return {
                     connection: {
                         host: `${host}`,
-                        port: port
+                        port: port,
                     },
-                }
-
+                };
             },
-
-
-
         }),
-        BullModule.registerQueue({ name: "documentConversion", }),
-        GotenbergModule, FileStorageModule, PdfModule, SearchModule
+        BullModule.registerQueue({ name: 'documentConversion' }),
+        GotenbergModule,
+        FileStorageModule,
+        PdfModule,
+        SearchModule,
     ],
     providers: [DocumentConversionProcessor, DocumentConversionService],
     exports: [DocumentConversionService],
 })
-export class BullmqModule { }
+export class BullmqModule {}

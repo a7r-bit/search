@@ -3,4 +3,4 @@ export enum NodeSortParamsEnum {
     NAME = 'name',
     CREATED_AT = 'createdAt',
     UPDATED_AT = 'updatedAt',
-} 
+}

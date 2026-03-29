@@ -5,8 +5,8 @@ import { NodeModule } from '../node';
 import { DocumentVersionModule } from '../document-version';
 
 @Module({
-  imports: [NodeModule, DocumentVersionModule],
-  controllers: [ImportController],
-  providers: [ImportService],
+    imports: [NodeModule, DocumentVersionModule],
+    controllers: [ImportController],
+    providers: [ImportService],
 })
-export class ImportModule { }
+export class ImportModule {}

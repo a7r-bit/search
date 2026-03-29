@@ -1,5 +1,5 @@
-import { ElasticTypes } from "../../../common/constants";
-import { NodeType } from "@prisma/client";
+import { ElasticTypes } from '../../../common/constants';
+import { NodeType } from '@prisma/client';
 
 export interface BaseSearchResultDTO {
     id: string;
@@ -11,12 +11,10 @@ export interface BaseSearchResultDTO {
         fileName?: string[];
         content?: string[];
     };
-
-
 }
 
 function clearLines(value: string[]) {
-    return value.map(item => item.replace(/\n/g, " "));
+    return value.map((item) => item.replace(/\n/g, ' '));
 }
 
 function cleanHighlight(highlight: any) {
@@ -41,7 +39,6 @@ export interface DocumentVersionSearchResultDTO extends BaseSearchResultDTO {
 }
 
 export type SearchResultDTO = NodeSearchResultDTO | DocumentVersionSearchResultDTO;
-
 
 export function normalizeElasticHit(hit: any): SearchResultDTO {
     const index = hit._index as ElasticTypes;
@@ -71,7 +68,7 @@ export function normalizeElasticHit(hit: any): SearchResultDTO {
                 version: src.version,
                 fileUrl: '/' + src.path.replace(/\\/g, '/').replace(/^\/+/, ''),
                 fileName: src.fileName,
-                createdAt: src.createdAt
+                createdAt: src.createdAt,
             };
 
         default:

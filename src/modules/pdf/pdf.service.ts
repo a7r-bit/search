@@ -8,5 +8,4 @@ export class PdfService {
         const data = new PDFParse(uint8Array);
         return (await data.getText()).text;
     }
-
 }

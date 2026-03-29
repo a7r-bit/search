@@ -1,10 +1,10 @@
-import { IsOptional, IsString, IsUUID } from "class-validator"
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class ImportDirectoryDto {
     @IsString()
-    path: string
+    path: string;
 
     @IsOptional()
     @IsUUID()
-    parentNodeId?: string
+    parentNodeId?: string;
 }

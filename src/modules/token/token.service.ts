@@ -1,45 +1,56 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PayloadDTO } from './dto/payload.dto';
 import { PrismaService } from '../prisma';
-import { UserService } from '../user';
-import { ACCESS_SECRET_KEY, JWT_EXPIRES_IN_ACCESS, JWT_EXPIRES_IN_REFRESH, REFRESH_SECRET_KEY } from '../../common/constants';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TokenService {
+
+    private readonly accessSecret: string;
+    private readonly refreshSecret: string;
+    private readonly accessExpires: string;
+    private readonly refreshExpires: string;
+
     constructor(
         private readonly jwtService: JwtService,
-        private readonly userService: UserService,
         private readonly prisma: PrismaService,
-    ) { }
+        private readonly config: ConfigService,
+    ) {
+        this.accessSecret = this.config.get<string>('ACCESS_SECRET_KEY', '');
+        this.refreshSecret = this.config.get<string>('REFRESH_SECRET_KEY', '');
+        this.accessExpires = this.config.get<string>('JWT_EXPIRES_IN_ACCESS', '15m');
+        this.refreshExpires = this.config.get<string>('JWT_EXPIRES_IN_REFRESH', '7d');
+
+        if (!this.accessSecret || !this.refreshSecret) {
+            throw new Error('ACCESS_SECRET_KEY and REFRESH_SECRET_KEY must be configured');
+        }
+    }
 
     private async generateAccessToken(payload: PayloadDTO): Promise<string> {
         return await this.jwtService.signAsync(payload, {
-            expiresIn: JWT_EXPIRES_IN_ACCESS as any,
-            secret: ACCESS_SECRET_KEY,
-
-        })
+            expiresIn: this.accessExpires as any,
+            secret: this.accessSecret,
+        });
     }
 
     private async generateRefreshToken(payload: PayloadDTO): Promise<string> {
-        return await this.jwtService.signAsync(
-            payload,
-            {
-                expiresIn: JWT_EXPIRES_IN_REFRESH as any,
-                secret: REFRESH_SECRET_KEY
-            })
+        return await this.jwtService.signAsync(payload, {
+            expiresIn: this.refreshExpires as any,
+            secret: this.refreshSecret,
+        });
     }
 
     async verifyAccessToken(access_token: string): Promise<PayloadDTO> {
-        return await this.jwtService.verify(access_token, { secret: ACCESS_SECRET_KEY })
+        return await this.jwtService.verify(access_token, {
+            secret: this.accessSecret,
+        });
     }
 
     async verifyRefreshToken(refresh_token: string): Promise<PayloadDTO> {
-        return await this.jwtService.verify(refresh_token, { secret: REFRESH_SECRET_KEY })
-    }
-
-    async decodeToken(token: string): Promise<PayloadDTO> {
-        return await this.jwtService.decode(token)
+        return await this.jwtService.verify(refresh_token, {
+            secret: this.refreshSecret,
+        });
     }
 
     async generateTokens(payload: PayloadDTO) {
@@ -48,33 +59,44 @@ export class TokenService {
         await this.prisma.refreshToken.upsert({
             where: { userId: payload.id },
             update: { token: refresh_token },
-            create: { userId: payload.id, token: refresh_token }
-        })
-        // const politics = await this.prisma.
+            create: { userId: payload.id, token: refresh_token },
+        });
 
-        return { access_token: access_token, refresh_token: refresh_token }
+        return { access_token: access_token, refresh_token: refresh_token };
     }
 
     async refreshTokens(refresh_token: string) {
-        const payload: PayloadDTO = await this.decodeToken(refresh_token)
-        const newAccess = await this.generateAccessToken({ id: payload.id, activeRole: payload.activeRole, politicGroups: payload.politicGroups })
-        const newRefresh = await this.generateRefreshToken({ id: payload.id, activeRole: payload.activeRole, politicGroups: payload.politicGroups })
-        const user = await this.userService.findOne(payload.id, { includeRoles: true });
-        if (!user.role.map(r => r.name).includes(payload.activeRole)) {
-            throw new BadRequestException(`Пользователь не имеет доступа к роли ${payload.activeRole}`)
+        const payload: PayloadDTO = await this.verifyRefreshToken(refresh_token);
+
+        // Check refresh token in DB
+        const stored = await this.prisma.refreshToken.findUnique({ where: { userId: payload.id } });
+
+        if (!stored || stored.token !== refresh_token) {
+            throw new UnauthorizedException('Invalid or replayed refresh token');
         }
+
+        // Generate new tokens
+        const newPayload: PayloadDTO = {
+            id: payload.id,
+            activeRole: payload.activeRole,
+            politicGroups: payload.politicGroups,
+        };
+
+        const newAccess = await this.generateAccessToken(newPayload);
+        const newRefresh = await this.generateRefreshToken(newPayload);
+
         await this.prisma.refreshToken.upsert({
             where: { userId: payload.id },
-            update: { token: refresh_token },
-            create: { userId: payload.id, token: refresh_token }
-        })
+            update: { token: newRefresh },
+            create: { userId: payload.id, token: newRefresh },
+        });
 
-        return { access_token: newAccess, refresh_token: newRefresh }
+        return { access_token: newAccess, refresh_token: newRefresh };
     }
 
     async remoteRefreshToken(access_token: string): Promise<boolean> {
-        const userData: PayloadDTO = await this.decodeToken(access_token)
-        await this.prisma.refreshToken.delete({ where: { userId: userData.id } })
-        return true
+        const userData: PayloadDTO = await this.verifyAccessToken(access_token);
+        await this.prisma.refreshToken.delete({ where: { userId: userData.id } });
+        return true;
     }
 }

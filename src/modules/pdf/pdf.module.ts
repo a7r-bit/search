@@ -3,8 +3,8 @@ import { PdfService } from './pdf.service';
 import { PdfController } from './pdf.controller';
 
 @Module({
-  controllers: [PdfController],
-  providers: [PdfService],
-  exports: [PdfService],
+    controllers: [PdfController],
+    providers: [PdfService],
+    exports: [PdfService],
 })
-export class PdfModule { }
+export class PdfModule {}

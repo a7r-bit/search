@@ -4,8 +4,8 @@ import { GlobalSearchController } from './global-search.controller';
 import { SearchModule } from '../search';
 
 @Module({
-  imports: [SearchModule],
-  controllers: [GlobalSearchController],
-  providers: [GlobalSearchService],
+    imports: [SearchModule],
+    controllers: [GlobalSearchController],
+    providers: [GlobalSearchService],
 })
-export class GlobalSearchModule { }
+export class GlobalSearchModule {}

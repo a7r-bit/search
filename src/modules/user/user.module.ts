@@ -5,9 +5,9 @@ import { RoleModule } from '../role';
 import { PrismaModule } from '../prisma';
 
 @Module({
-  imports: [RoleModule, PrismaModule],
-  controllers: [UserController],
-  providers: [UserService],
-  exports: [UserService,]
+    imports: [RoleModule, PrismaModule],
+    controllers: [UserController],
+    providers: [UserService],
+    exports: [UserService],
 })
-export class UserModule { }
+export class UserModule {}

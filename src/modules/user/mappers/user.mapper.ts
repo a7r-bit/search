@@ -1,7 +1,8 @@
-import { UserDTO } from "../dto/user.dto";
+import { UserDTO } from '../dto/user.dto';
+import { UserWithRoles } from '../types';
 
 export class UserMapper {
-    static toDTO(user: any): UserDTO {
+    static toUserDTO(user: UserWithRoles): UserDTO {
         return {
             id: user.id,
             uidNumber: user.uidNumber,
@@ -12,9 +13,9 @@ export class UserMapper {
                 name: r.name,
                 permissions: r.permissions?.map((p: any) => ({
                     id: p.id,
-                    name: p.name
-                }))
-            }))
-        }
+                    name: p.name,
+                })),
+            })),
+        };
     }
 }

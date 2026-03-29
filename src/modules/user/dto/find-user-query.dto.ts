@@ -1,10 +1,10 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import { IsBoolean, IsOptional } from "class-validator";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsOptional } from 'class-validator';
 
 export class FindUserQueryDto {
     @ApiPropertyOptional({
-        description: "Включать ли роли пользователя",
+        description: 'Включать ли роли пользователя',
         example: true,
         type: Boolean,
     })
@@ -19,9 +19,8 @@ export class FindUserQueryDto {
     })
     includeRoles?: boolean;
 
-
     @ApiPropertyOptional({
-        description: "Включать ли права (permissions) у ролей",
+        description: 'Включать ли права (permissions) у ролей',
         example: true,
         type: Boolean,
     })

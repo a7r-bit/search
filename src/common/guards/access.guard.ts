@@ -1,54 +1,52 @@
-import { CanActivate, ExecutionContext, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { Request } from "express";
-import { PERMISSION_KEY, ROLE_KEY, USER_ID_KEY } from "../decorators";
-import { TokenService } from "../../modules/token/token.service";
-import { RoleService } from "../../modules/role/role.service";
-import { UserService } from "../../modules/user/user.service";
-import { PayloadDTO } from "../../modules/token";
-
+import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
+import { PERMISSION_KEY, ROLE_KEY, USER_ID_KEY } from '../decorators';
+import { TokenService } from '../../modules/token/token.service';
+import { RoleService } from '../../modules/role/role.service';
+import { UserService } from '../../modules/user/user.service';
+import { PayloadDTO } from '../../modules/token';
+import { RequestUser } from '../types/request-user';
 
 /*
-*   Проверка токена при обращении к серверу и установка роли, 
-*   id пользователя и разрешений в метаданные.
-*   Прокидывает id и activeRole пользака дальше в req
-*   
-*   ROLE_KEY - роль пользователя полученная из токена 
-*   и прокинутая далее в контроллер через request.user
-*   
-*   PERMISSION_KEY - разрешения пользователя полученные из токена
-*   вида ["client:write", "client:list", "client:read", "client:delete"]
-*   
-*   USER_ID_KEY - id пользователя полученная из токена
-*   и прокинутая далее в контроллер через request.user
-* 
-*/
+ *   Проверка токена при обращении к серверу и установка роли,
+ *   id пользователя и разрешений в метаданные.
+ *   Прокидывает id и activeRole пользака дальше в req
+ *
+ *   ROLE_KEY - роль пользователя полученная из токена
+ *   и прокинутая далее в контроллер через request.user
+ *
+ *   PERMISSION_KEY - разрешения пользователя полученные из токена
+ *   вида ["client:write", "client:list", "client:read", "client:delete"]
+ *
+ *   USER_ID_KEY - id пользователя полученная из токена
+ *   и прокинутая далее в контроллер через request.user
+ *
+ */
 @Injectable()
 export class AccessGuard implements CanActivate {
     constructor(
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
         private readonly userService: UserService,
-    ) { }
-
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-        Logger.debug("Assecc guard", AccessGuard.name)
+        Logger.debug('Assecc guard', AccessGuard.name);
 
         Reflect.defineMetadata(ROLE_KEY, [], context.getHandler());
         Reflect.defineMetadata(PERMISSION_KEY, [], context.getHandler());
         Reflect.defineMetadata(USER_ID_KEY, null, context.getHandler());
 
-        if (request.url.includes("auth/signIn")) return true;
+        if (request.url.includes('auth/signIn')) return true;
 
-        if (!request.headers.authorization) throw new UnauthorizedException("Невалидные данные токена")
+        if (!request.headers.authorization) throw new UnauthorizedException('Невалидные данные токена');
 
-        if (request.headers.authorization.startsWith("Bearer ")) {
-            const token = request.headers.authorization.replace("Bearer ", "");
+        if (request.headers.authorization.startsWith('Bearer ')) {
+            const token = request.headers.authorization.replace('Bearer ', '');
 
-            if (!token || token === "undefined") {
-                throw new UnauthorizedException("Невалидные данные токена")
-
+            if (!token || token === 'undefined') {
+                throw new UnauthorizedException('Невалидные данные токена');
             }
 
             try {
@@ -58,32 +56,37 @@ export class AccessGuard implements CanActivate {
                 const politicGroups = payload.politicGroups;
                 const activeRole = await this.roleService.getRoleWithPermissions(payload.activeRole);
 
-                const user = await this.userService.findOne(userId, { includeRoles: true, includePermissions: true })
+                const user = await this.userService.findOne(userId, {
+                    includeRoles: true,
+                    includePermissions: true,
+                });
 
-                request.user = {
+                const requestUser: RequestUser = {
                     id: user.id,
+                    uidNumber: user.uidNumber,
                     activeRole: activeRole.name,
-                    politicGroups
+                    politicGroups,
+                };
+                request.user = requestUser;
+
+                if (!user.role.some((r) => r.id == activeRole.id)) {
+                    throw new UnauthorizedException('Невалидные данные токена');
                 }
-
-
-
-                if (!user.role.some(r => r.id == activeRole.id)) {
-                    throw new UnauthorizedException("Невалидные данные токена")
-                }
-
 
                 Reflect.defineMetadata(ROLE_KEY, activeRole.name, context.getHandler());
-                Reflect.defineMetadata(PERMISSION_KEY, activeRole.permissions.flatMap(p => p.name), context.getHandler());
-                Reflect.defineMetadata(USER_ID_KEY, user!.id, context.getHandler());
+                Reflect.defineMetadata(
+                    PERMISSION_KEY,
+                    activeRole.permissions.flatMap((p) => p.name),
+                    context.getHandler(),
+                );
+                Reflect.defineMetadata(USER_ID_KEY, user.id, context.getHandler());
 
                 return true;
-            } catch (err) {
-                throw new UnauthorizedException("Невалидные данные токена")
+            } catch (_) {
+                throw new UnauthorizedException('Невалидные данные токена');
             }
         }
 
-        throw new UnauthorizedException("Невалидные данные токена")
-
+        throw new UnauthorizedException('Невалидные данные токена');
     }
 }

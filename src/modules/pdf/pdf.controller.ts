@@ -3,5 +3,5 @@ import { PdfService } from './pdf.service';
 
 @Controller('pdf')
 export class PdfController {
-  constructor(private readonly pdfService: PdfService) {}
+    constructor(private readonly pdfService: PdfService) {}
 }

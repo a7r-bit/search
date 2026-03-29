@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsString, IsUUID } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDocumentVersionDto {
     @ApiProperty({
@@ -11,6 +11,4 @@ export class CreateDocumentVersionDto {
     @IsNotEmpty()
     @IsUUID()
     nodeId: string;
-
-
 }

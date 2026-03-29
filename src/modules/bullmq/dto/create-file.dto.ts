@@ -1,20 +1,19 @@
-import { IsNotEmpty, IsString } from "class-validator"
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateFileDto {
     @IsString()
     @IsNotEmpty()
-    filePath: string
+    filePath: string;
 
     @IsString()
     @IsNotEmpty()
-    fileName: string
+    fileName: string;
 
     @IsString()
     @IsNotEmpty()
-    extention: string
+    extention: string;
 
     @IsString()
     @IsNotEmpty()
-    documentVersionId: string
-
+    documentVersionId: string;
 }

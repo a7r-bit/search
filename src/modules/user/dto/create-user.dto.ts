@@ -1,8 +1,7 @@
-import { IsNotEmpty, IsString, IsArray, IsJWT, IsOptional } from "class-validator";
-import { Role } from "@prisma/client";
+import { IsNotEmpty, IsString, IsArray, IsOptional } from 'class-validator';
+import { Role } from '@prisma/client';
 
 export class CreateUserDto {
-
     @IsString()
     @IsNotEmpty()
     uidNumber: string;
@@ -20,7 +19,5 @@ export class CreateUserDto {
     groups: string[] = [];
 
     @IsOptional()
-    roles?: Role[]
-
-
+    roles?: Role[];
 }

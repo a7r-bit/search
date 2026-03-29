@@ -1,7 +1,7 @@
-import { NodeDto } from "./node.dto";
+import { Node } from '@prisma/client';
+import { NodeDto } from './node.dto';
 
-
-export function toNodeDto(n: any): NodeDto {
+export function toNodeDto(n: Node): NodeDto {
     return {
         id: n.id,
         type: n.type,

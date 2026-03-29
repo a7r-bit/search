@@ -4,15 +4,16 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class DocumentConversionService {
-    constructor(@InjectQueue("documentConversion") private documentConversionQueue: Queue) { }
+    constructor(@InjectQueue('documentConversion') private documentConversionQueue: Queue) {}
     async addConversionJob(documentVersionId: string, filePath: string, isPDF: boolean) {
         await this.documentConversionQueue.add(
-            "documentConversion",
+            'documentConversion',
             { documentVersionId, filePath, isPDF },
 
             {
                 jobId: documentVersionId,
-                backoff: { type: 'exponential', delay: 5000 }
-            })
+                backoff: { type: 'exponential', delay: 5000 },
+            },
+        );
     }
 }
