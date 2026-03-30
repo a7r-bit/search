@@ -96,7 +96,7 @@ services:
       - .env
 
     environment:
-      - node.name=elasticsearch
+      - node.name=${ELASTIC_NODE_NAME}
       - cluster.name=${CLUSTER_NAME}
       - discovery.type=single-node
       - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}

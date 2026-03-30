@@ -6,6 +6,8 @@ import { RoleService } from '../../modules/role/role.service';
 import { UserService } from '../../modules/user/user.service';
 import { PayloadDTO } from '../../modules/token';
 import { RequestUser } from '../types/request-user';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /*
  *   Проверка токена при обращении к серверу и установка роли,
@@ -24,21 +26,24 @@ import { RequestUser } from '../types/request-user';
  */
 @Injectable()
 export class AccessGuard implements CanActivate {
+    private logger = new Logger(AccessGuard.name);
     constructor(
+        private readonly reflector: Reflector,
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
         private readonly userService: UserService,
-    ) {}
+    ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-        Logger.debug('Assecc guard', AccessGuard.name);
+        this.logger.debug('Access guard');
 
-        Reflect.defineMetadata(ROLE_KEY, [], context.getHandler());
+        const isPublic = this.reflector.get<boolean>(IS_PUBLIC_KEY, context.getHandler());
+        // Reflect.defineMetadata(ROLE_KEY, [], context.getHandler());
         Reflect.defineMetadata(PERMISSION_KEY, [], context.getHandler());
         Reflect.defineMetadata(USER_ID_KEY, null, context.getHandler());
 
-        if (request.url.includes('auth/signIn')) return true;
+        if (isPublic) return true;
 
         if (!request.headers.authorization) throw new UnauthorizedException('Невалидные данные токена');
 
@@ -73,7 +78,7 @@ export class AccessGuard implements CanActivate {
                     throw new UnauthorizedException('Невалидные данные токена');
                 }
 
-                Reflect.defineMetadata(ROLE_KEY, activeRole.name, context.getHandler());
+                // Reflect.defineMetadata(ROLE_KEY, activeRole.name, context.getHandler());
                 Reflect.defineMetadata(
                     PERMISSION_KEY,
                     activeRole.permissions.flatMap((p) => p.name),

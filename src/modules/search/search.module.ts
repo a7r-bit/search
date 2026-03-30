@@ -1,30 +1,40 @@
 import { Module } from '@nestjs/common';
 import { ElasticsearchModule } from '@nestjs/elasticsearch';
 import { SearchService } from './search.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
     imports: [
+        ConfigModule,
         ElasticsearchModule.registerAsync({
-            useFactory: async () => {
-                const host = 'elasticsearch';
-                const port = process.env.ELASTICSEARCH_PORT || '9200';
-                const username = process.env.ELASTIC_USERNAME || 'elastic';
-                const password = process.env.ELASTIC_PASSWORD;
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (config: ConfigService) => {
+                const host = config.get<string>('ELASTICSEARCH_HOST');
+                const port = config.get<string>('ELASTICSEARCH_PORT');
+                const username = config.get<string>('ELASTIC_USERNAME');
+                const password = config.get<string>('ELASTIC_PASSWORD');
 
-                if (!password) {
-                    throw new Error(
-                        'ELASTIC_PASSWORD не задан. Установите переменную окружения для подключения к Elasticsearch 8.x с включенной security.',
-                    );
+                const maxRetries = Number(config.get<string>('ES_MAX_RETRIES', '3'));
+                const requestTimeout = Number(config.get<string>('ES_REQUEST_TIMEOUT_MS', '30000'));
+                const pingTimeout = Number(config.get<string>('ES_PING_TIMEOUT_MS', '2000'));
+
+                if (!host || !port) {
+                    throw new Error('ELASTICSEARCH_HOST and ELASTICSEARCH_PORT must be configured');
                 }
+                if (!username || !password) {
+                    throw new Error('ELASTIC_USERNAME and ELASTIC_PASSWORD must be configured');
+                }
+
 
                 const node = `http://${host}:${port}`;
 
                 return {
                     node,
                     auth: { username, password },
-                    maxRetries: Number(process.env.ES_MAX_RETRIES ?? 3),
-                    requestTimeout: Number(process.env.ES_REQUEST_TIMEOUT_MS ?? 30000),
-                    pingTimeout: Number(process.env.ES_PING_TIMEOUT_MS ?? 2000),
+                    maxRetries: maxRetries,
+                    requestTimeout: requestTimeout,
+                    pingTimeout: pingTimeout,
                 };
             },
         }),
@@ -32,4 +42,4 @@ import { SearchService } from './search.service';
     providers: [SearchService],
     exports: [SearchService],
 })
-export class SearchModule {}
+export class SearchModule { }

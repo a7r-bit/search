@@ -1,19 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
-import { Role } from '@prisma/client';
-import { GROUP_TO_ROLE } from '../../common/constants';
 
 @Injectable()
 export class RoleService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
-    async mapLdapGroupsToRoles(groups: string[]): Promise<Role[]> {
-        const roleName = groups.map((group) => GROUP_TO_ROLE[group]).filter(Boolean);
-
-        return await this.prisma.role.findMany({
-            where: { name: { in: roleName } },
-        });
+    async getRoles() {
+        return await this.prisma.role.findMany();
     }
+
+
 
     async getRoleWithPermissions(roleName: string) {
         const role = await this.prisma.role.findUnique({

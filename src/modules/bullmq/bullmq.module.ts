@@ -8,7 +8,6 @@ import { PdfModule } from '../pdf/pdf.module';
 import { SearchModule } from '../search';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-Logger.log(`BullMQ → Redis host: ${process.env.REDIS_HOST}, port: ${process.env.REDIS_PORT}`, 'BullmqModule');
 
 @Module({
     imports: [
@@ -37,4 +36,4 @@ Logger.log(`BullMQ → Redis host: ${process.env.REDIS_HOST}, port: ${process.en
     providers: [DocumentConversionProcessor, DocumentConversionService],
     exports: [DocumentConversionService],
 })
-export class BullmqModule {}
+export class BullmqModule { }

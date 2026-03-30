@@ -5,4 +5,4 @@ import { GotenbergService } from './gotenberg.service';
     providers: [GotenbergService],
     exports: [GotenbergService],
 })
-export class GotenbergModule {}
+export class GotenbergModule { }
