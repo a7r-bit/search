@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NodeType {
+  DIRECTORY
+  DOCUMENT
+}
+
+enum ConversionStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+enum NodePermissionType {
+  READ
+  WRITE
+  DELETE
+  ADMIN
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  uidNumber      String        @unique @map("uidNumber")
+  firstName      String        @map("first_name")
+  middleName     String        @map("middle_name")
+  groups         String[]      @default([])
+  refreshToken   RefreshToken?
+  role           Role[]
+  likedNodes     LikedNode[]
+  politicsGroups Group[]
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Group {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String  @unique
+  externalId String? @unique @map("external_id")
+
+  access NodeAccess[]
+  users  User[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("groups")
+}
+
+model NodeAccess {
+  id          String               @id @default(uuid()) @db.Uuid
+  groupId     String               @map("group_id") @db.Uuid
+  group       Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  nodeId      String               @map("node_id") @db.Uuid
+  node        Node                 @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  permissions NodePermissionType[] @default([READ])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([groupId, nodeId])
+  @@index([groupId])
+  @@index([nodeId])
+  @@map("node_accesses")
+}
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @unique
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  roles     Role[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+model Node {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        NodeType
+  parentId    String?  @map("parent_id") @db.Uuid
+  parent      Node?    @relation("NodeToNode", fields: [parentId], references: [id])
+  children    Node[]   @relation("NodeToNode")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  documentVersions DocumentVersion[]
+  likedBy          LikedNode[]
+  accesses         NodeAccess[]
+
+  @@unique([parentId, name, type])
+  @@index([parentId])
+  @@index([type])
+  @@map("nodes")
+}
+
+// -------------------
+// DETAILS
+// -------------------
+
+model DocumentVersion {
+  id               String           @id @default(uuid()) @db.Uuid
+  version          Int
+  nodeId           String           @map("node_id") @db.Uuid
+  node             Node             @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  mediaFile        MediaFile?
+  conversionStatus ConversionStatus @default(PENDING) @map("conversion_status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([version, nodeId])
+  @@map("document_versions")
+}
+
+model MediaFile {
+  id                String           @id @default(uuid()) @db.Uuid
+  filePath          String           @map("file_path")
+  fileName          String           @map("file_name")
+  extention         String
+  documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("media_file")
+}
+
+model LikedNode {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId String @map("node_id") @db.Uuid
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, nodeId])
+  @@map("liked_nodes")
+}
