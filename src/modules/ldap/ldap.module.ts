@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import Strategy from 'passport-ldapauth';
-import { RequestUser } from '../../common/types/request-user';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

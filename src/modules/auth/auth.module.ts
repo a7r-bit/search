@@ -13,4 +13,4 @@ import { EmplayersParserModule } from '../emplayees_parser/emplayees_parser.modu
     imports: [UserModule, RoleModule, TokenModule, PoliticModule, EmplayersParserModule],
     providers: [AuthService, LdapStrategy],
 })
-export class AuthModule {}
+export class AuthModule { }

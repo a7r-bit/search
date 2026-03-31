@@ -22,7 +22,7 @@ export class GotenbergService {
         const form = new FormData();
         form.append('files', file, { filename: basename(pathToFile) });
 
-        const res = await axios.post(`${this.host}:${this.port}/forms/libreoffice/convert`, form, {
+        const res = await axios.post(`http://${this.host}:${this.port}/forms/libreoffice/convert`, form, {
             headers: form.getHeaders(),
             responseType: 'arraybuffer',
         });
