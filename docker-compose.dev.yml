@@ -1,175 +1,171 @@
 services:
+    app:
+        build:
+            context: .
+            dockerfile: ./docker/Dockerfile
 
-  app:
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile
+        container_name: nest_app
 
-    container_name: nest_app
+        env_file:
+            - .env
 
-    env_file:
-      - .env
+        environment:
+            NODE_ENV: development
+            HOST: 0.0.0.0
+            PORT: 3000
 
-    command: sh ./docker/init-prisma.sh
+            DATABASE_URL: ${DATABASE_URL}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            GOTENBERG_URL: http://${GOTENBERG_HOST}:${GOTENBERG_PORT}
+            LDAP_HOST: ${LDAP_HOST}
+            LDAP_PORT: ${LDAP_PORT}
+            LDAP_BASEDN: ${LDAP_BASE_DN}
+            LDAP_ADMIN_DN: ${LDAP_ADMIN_DN}
+            LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
 
-    environment:
-      NODE_ENV: development
-      HOST: 0.0.0.0
-      PORT: 3000
+        volumes:
+            - ./uploads:/app/uploads
 
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      GOTENBERG_URL: http://${GOTENBERG_HOST}:${GOTENBERG_PORT}
-      LDAP_HOST: ${LDAP_HOST}
-      LDAP_PORT: ${LDAP_PORT}
-      LDAP_BASEDN: ${LDAP_BASE_DN}
-      LDAP_ADMIN_DN: ${LDAP_ADMIN_DN}
-      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
+        ports:
+            - '3000:3000'
+            - '5555:5555'
 
-    volumes:
-      - ./uploads:/app/uploads
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            elasticsearch:
+                condition: service_started
+            openldap:
+                condition: service_started
+            gotenberg:
+                condition: service_started
 
-    ports:
-      - "3000:3000"
-      - "5555:5555"
+        networks:
+            - appnet
 
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_started
-      openldap:
-        condition: service_started
-      gotenberg:
-        condition: service_started
+    postgres:
+        image: postgres:15-alpine
+        container_name: postgres
 
-    networks:
-      - appnet
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: Search
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
+        ports:
+            - '5432:5432'
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: Search
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+            - ./docker/postgres/init:/docker-entrypoint-initdb.d
 
-    ports:
-      - "5432:5432"
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d Search']
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+        networks:
+            - appnet
 
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d Search" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    redis:
+        image: redis:7
+        container_name: redis
 
-    networks:
-      - appnet
+        ports:
+            - '6379:6379'
 
-  redis:
-    image: redis:7
-    container_name: redis
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 3s
+            timeout: 3s
+            retries: 10
 
-    ports:
-      - "6379:6379"
+        networks:
+            - appnet
 
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+    elasticsearch:
+        image: timaboks/elastic-pluggin
+        env_file:
+            - .env
 
-    networks:
-      - appnet
+        environment:
+            - node.name=${ELASTIC_NODE_NAME}
+            - cluster.name=${CLUSTER_NAME}
+            - discovery.type=single-node
+            - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+            - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+            - xpack.security.enabled=true
+            - xpack.security.http.ssl.enabled=false
+            - xpack.security.transport.ssl.enabled=false
+            - ES_JAVA_OPTS=-Xms512m -Xmx512m
 
-  elasticsearch:
-    image: timaboks/elastic-pluggin
-    env_file:
-      - .env
+        ports:
+            - '${ELASTICSEARCH_PORT}:9200'
 
-    environment:
-      - node.name=${ELASTIC_NODE_NAME}
-      - cluster.name=${CLUSTER_NAME}
-      - discovery.type=single-node
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=false
-      - xpack.security.transport.ssl.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+        volumes:
+            - esdata:/usr/share/elasticsearch/data
 
-    ports:
-      - "${ELASTICSEARCH_PORT}:9200"
+        networks:
+            - appnet
 
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
+    openldap:
+        image: osixia/openldap:1.5.0
+        container_name: openldap
 
-    networks:
-      - appnet
+        environment:
+            LDAP_ORGANISATION: 'MyCompany'
+            LDAP_DOMAIN: 'mycompany.local'
+            LDAP_ADMIN_PASSWORD: admin
 
-  openldap:
-    image: osixia/openldap:1.5.0
-    container_name: openldap
+        ports:
+            - '389:389'
 
-    environment:
-      LDAP_ORGANISATION: "MyCompany"
-      LDAP_DOMAIN: "mycompany.local"
-      LDAP_ADMIN_PASSWORD: admin
+        volumes:
+            - ldap_data:/var/lib/ldap
+            - ldap_config:/etc/ldap/slapd.d
 
-    ports:
-      - "389:389"
+        networks:
+            - appnet
 
-    volumes:
-      - ldap_data:/var/lib/ldap
-      - ldap_config:/etc/ldap/slapd.d
+    phpldapadmin:
+        image: osixia/phpldapadmin:0.8.0
+        container_name: phpldapadmin
 
-    networks:
-      - appnet
+        environment:
+            PHPLDAPADMIN_LDAP_HOSTS: openldap
+            PHPLDAPADMIN_HTTPS: 'false'
 
-  phpldapadmin:
-    image: osixia/phpldapadmin:0.8.0
-    container_name: phpldapadmin
+        ports:
+            - '8081:80'
 
-    environment:
-      PHPLDAPADMIN_LDAP_HOSTS: openldap
-      PHPLDAPADMIN_HTTPS: "false"
+        depends_on:
+            - openldap
 
-    ports:
-      - "8081:80"
+        networks:
+            - appnet
 
-    depends_on:
-      - openldap
+    gotenberg:
+        image: gotenberg/gotenberg:8
+        container_name: gotenberg
 
-    networks:
-      - appnet
+        ports:
+            - '3001:3000'
 
-  gotenberg:
-    image: gotenberg/gotenberg:8
-    container_name: gotenberg
-
-    ports:
-      - "3001:3000"
-
-    networks:
-      - appnet
+        networks:
+            - appnet
 
 volumes:
-  pgdata:
-  node_modules:
-  esdata:
-  ldap_data:
-  ldap_config:
-
+    pgdata:
+    node_modules:
+    esdata:
+    ldap_data:
+    ldap_config:
 
 networks:
-  appnet:
-    name: appnet
-    driver: bridge
+    appnet:
+        name: appnet
+        driver: bridge
