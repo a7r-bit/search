@@ -51,7 +51,7 @@ import { ElasticSearchProducer } from './queues/elasticsearch/elasticsearch.prod
         PdfModule,
         SearchModule,
     ],
-    providers: [DocumentConversionProcessor, DocumentConversionService],
+    providers: [DocumentConversionProcessor, DocumentConversionService, ElasticSearchProducer],
     exports: [DocumentConversionService, ElasticSearchProducer],
 })
 export class BullmqModule {}
