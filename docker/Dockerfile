@@ -1,6 +1,6 @@
-FROM dockerhub.mingas.by/node:22.13.1-alpine
+FROM dockerhub.mingas.by/node:22
 
-RUN apk add postgresql-client
+RUN apt-get update && apt-get install -y postgresql-client
 
 WORKDIR /app
 
@@ -15,6 +15,5 @@ RUN npm run build
 EXPOSE 3000
 
 RUN chmod +x ./docker/init-prisma.sh
-
 
 ENTRYPOINT ["sh", "./docker/init-prisma.sh"]
