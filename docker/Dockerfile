@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM dockerhub.mingas.by/node:22.13.1-alpine
 
 RUN apk add postgresql-client
 
@@ -11,7 +11,7 @@ COPY prisma ./prisma
 RUN npm ci
 
 COPY . .
-
+RUN npm run build
 EXPOSE 3000
 
 RUN chmod +x ./docker/init-prisma.sh

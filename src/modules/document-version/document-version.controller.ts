@@ -156,8 +156,8 @@ export class DocumentVersionController {
                         /(application\/msword|application\/vnd.openxmlformats-officedocument.wordprocessingml.document|application\/pdf)$/,
                     ),
                     new MaxFileSizeValidator({
-                        maxSize: 1024 * 1024 * 5,
-                        message: `Размер файла не может превышать 5МБ`,
+                        maxSize: 1024 * 1024 * 30,
+                        message: `Размер файла не может превышать 30МБ`,
                     }),
                 ],
                 exceptionFactory: (error) => new BadRequestException(error),

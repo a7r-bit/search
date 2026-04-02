@@ -43,7 +43,8 @@ export class AccessGuard implements CanActivate {
         Reflect.defineMetadata(PERMISSION_KEY, [], context.getHandler());
         Reflect.defineMetadata(USER_ID_KEY, null, context.getHandler());
 
-        if (isPublic) return true;
+        // if (isPublic) return true;
+        if (request.url.includes('auth/signIn')) return true;
 
         if (!request.headers.authorization) throw new UnauthorizedException('Невалидные данные токена');
 
