@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { DocumentConversionService } from '../bullmq/document-conversion.service';
+import { DocumentConversionService } from '../bullmq/queues/document-conversion/document-conversion.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
@@ -11,6 +11,7 @@ import { SearchService } from '../search';
 import { Prisma } from '@prisma/client';
 import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
+import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
 
 @Injectable()
 export class DocumentVersionService {
@@ -20,6 +21,7 @@ export class DocumentVersionService {
         private readonly fileStorageService: FileStorageService,
         private readonly documentConversionService: DocumentConversionService,
         private readonly searchService: SearchService,
+        private readonly esProducer: ElasticSearchProducer,
     ) {}
     private async getLastVersion(nodeId: string, tx: Prisma.TransactionClient): Promise<number> {
         const lastVersion = await tx.documentVersion.findFirst({
@@ -207,6 +209,7 @@ export class DocumentVersionService {
                 throw new BadRequestException(`Документ с версией ${version} уже существует`);
             }
         }
+
         const updatedDocumentVersion = await this.prisma.documentVersion.update({
             where: { id },
             data: {
@@ -221,12 +224,20 @@ export class DocumentVersionService {
                 mediaFile: true,
             },
         });
-        await this.searchService.updateDocument(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
+
+        await this.esProducer.updateAsync(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
             nodeId: updatedDocumentVersion.nodeId,
             fileName: updatedDocumentVersion.mediaFile?.fileName,
             path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
             version: updatedDocumentVersion.version,
         });
+
+        // await this.searchService.updateDocument(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
+        //     nodeId: updatedDocumentVersion.nodeId,
+        //     fileName: updatedDocumentVersion.mediaFile?.fileName,
+        //     path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
+        //     version: updatedDocumentVersion.version,
+        // });
 
         return new DocumentVersionDto(updatedDocumentVersion);
     }

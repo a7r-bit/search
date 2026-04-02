@@ -1,15 +1,15 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { PrismaService } from '../prisma/prisma.service';
-import { GotenbergService } from '../gotenberg/gotenberg.service';
-import { FileStorageService } from '../file-storage/file-storage.service';
-import { PdfService } from '../pdf/pdf.service';
-import { SearchService } from '../search';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { GotenbergService } from '../../../gotenberg/gotenberg.service';
+import { FileStorageService } from '../../../file-storage/file-storage.service';
+import { PdfService } from '../../../pdf/pdf.service';
+import { SearchService } from '../../../search';
 import { instanceToPlain } from 'class-transformer';
 import * as fs from 'node:fs/promises';
-import { ElasticTypes } from '../../common/constants';
-import { DocumentVersionIndexDto } from '../../common/elasic-search-models';
+import { ElasticTypes } from '../../../../common/constants';
+import { DocumentVersionIndexDto } from '../../../../common/elasic-search-models';
 
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
