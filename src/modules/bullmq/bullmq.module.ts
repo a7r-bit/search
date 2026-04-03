@@ -8,6 +8,7 @@ import { PdfModule } from '../pdf/pdf.module';
 import { SearchModule } from '../search';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ElasticSearchProducer } from './queues/elasticsearch/elasticsearch.producer';
+import { ElasticsearchProcessor } from './queues/elasticsearch/elasticsearch.processor';
 
 @Module({
     imports: [
@@ -51,7 +52,7 @@ import { ElasticSearchProducer } from './queues/elasticsearch/elasticsearch.prod
         PdfModule,
         SearchModule,
     ],
-    providers: [DocumentConversionProcessor, DocumentConversionService, ElasticSearchProducer],
+    providers: [DocumentConversionProcessor, DocumentConversionService, ElasticsearchProcessor, ElasticSearchProducer],
     exports: [DocumentConversionService, ElasticSearchProducer],
 })
 export class BullmqModule {}

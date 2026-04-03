@@ -108,7 +108,7 @@ export class SearchService {
         });
     }
 
-    async updateDocument<T>(index: ElasticTypes, id: string, document) {
+    async updateDocument<T>(index: ElasticTypes, id: string, document: T) {
         return await this.elasticSearchService.update<T>({
             index,
             id,

@@ -1,116 +1,113 @@
 services:
+    app:
+        build:
+            context: .
+            dockerfile: ./docker/Dockerfile
 
-  app:
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile
+        container_name: nest_app
+        env_file:
+            - .env
 
-    container_name: nest_app
-    env_file:
-      - .env
+        command: sh ./docker/init-prisma.sh
 
-    command: sh ./docker/init-prisma.sh
+        environment:
+            NODE_ENV: development
+            HOST: 0.0.0.0
+            PORT: ${PORT}
 
-    environment:
-      NODE_ENV: development
-      HOST: 0.0.0.0
-      PORT: 3000
+            DATABASE_URL: ${DATABASE_URL}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            GOTENBERG_URL: http://${GOTENBERG_HOST}:${GOTENBERG_PORT}
+            LDAP_HOST: ${LDAP_HOST}
+            LDAP_PORT: ${LDAP_PORT}
+            LDAP_BASEDN: ${LDAP_BASE_DN}
+            LDAP_ADMIN_DN: ${LDAP_ADMIN_DN}
+            LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
 
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      GOTENBERG_URL: http://${GOTENBERG_HOST}:${GOTENBERG_PORT}
-      LDAP_HOST: ${LDAP_HOST}
-      LDAP_PORT: ${LDAP_PORT}
-      LDAP_BASEDN: ${LDAP_BASE_DN}
-      LDAP_ADMIN_DN: ${LDAP_ADMIN_DN}
-      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
+        volumes:
+            - ./uploads:/app/uploads
 
-    volumes:
-      - ./uploads:/app/uploads
+        ports:
+            - '3000:3000'
+            - '5555:5555'
 
-    ports:
-      - "3000:3000"
-      - "5555:5555"
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            elasticsearch:
+                condition: service_started
+            gotenberg:
+                condition: service_started
 
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_started
-      gotenberg:
-        condition: service_started
+    postgres:
+        image: dockerhub.mingas.by/postgres:15.2
+        container_name: postgres
 
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: Search
 
-  postgres:
-    image: dockerhub.mingas.by/postgres:15.2
-    container_name: postgres
+        ports:
+            - '15432:5432'
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: Search
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+            - ./docker/postgres/init:/docker-entrypoint-initdb.d
 
-    ports:
-      - "15432:5432"
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d Search']
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    redis:
+        image: dockerhub.mingas.by/redis:7.0.5-alpine
+        container_name: redis-art
 
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d Search" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+        ports:
+            - '16379:6379'
 
-  redis:
-    image: dockerhub.mingas.by/redis:7.0.5-alpine
-    container_name: redis-art
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 3s
+            timeout: 3s
+            retries: 10
 
-    ports:
-      - "16379:6379"
+    elasticsearch:
+        image: dockerhub.mingas.by/elasticsearch:elastic-pluggin
+        container_name: elasticsearch
+        env_file:
+            - .env
 
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+        environment:
+            - node.name=${ELASTIC_NODE_NAME}
+            - cluster.name=${CLUSTER_NAME}
+            - discovery.type=single-node
+            - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+            - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+            - xpack.security.enabled=true
+            - xpack.security.http.ssl.enabled=false
+            - xpack.security.transport.ssl.enabled=false
+            - ES_JAVA_OPTS=-Xms512m -Xmx512m
 
-  elasticsearch:
-    image: dockerhub.mingas.by/elasticsearch:elastic-pluggin
-    container_name: elasticsearch
-    env_file:
-      - .env
+        ports:
+            - '${ELASTICSEARCH_PORT}:9200'
 
-    environment:
-      - node.name=${ELASTIC_NODE_NAME}
-      - cluster.name=${CLUSTER_NAME}
-      - discovery.type=single-node
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=false
-      - xpack.security.transport.ssl.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+        volumes:
+            - esdata:/usr/share/elasticsearch/data
 
-    ports:
-      - "${ELASTICSEARCH_PORT}:9200"
+    gotenberg:
+        image: dockerhub.mingas.by/gotenberg:8
+        container_name: gotenberg
 
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
-
-  gotenberg:
-    image: dockerhub.mingas.by/gotenberg:8
-    container_name: gotenberg
-
-    ports:
-      - "3001:3000"
+        ports:
+            - '3001:3000'
 
 volumes:
-  pgdata:
-  node_modules:
-  esdata:
-
+    pgdata:
+    node_modules:
+    esdata:

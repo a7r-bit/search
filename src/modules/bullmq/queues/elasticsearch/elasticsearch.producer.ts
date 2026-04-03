@@ -8,21 +8,22 @@ import { ESJobData, ESJobResult } from './elasticsearch.types';
 export class ElasticSearchProducer {
     constructor(@InjectQueue('elasticsearch') private esQueue: Queue<ESJobData>) {}
 
-    async indexAsync(indexName: ElasticTypes, id: string, body: any) {
+    async indexAsync(indexName: ElasticTypes, id: string, doc: any) {
         await this.esQueue.add('index', {
             operation: 'index',
             indexName,
             id,
-            body,
+            doc,
         });
     }
-    async updateAsync(indexName: ElasticTypes, id: string, body: any) {
+    async updateAsync(indexName: ElasticTypes, id: string, doc: any) {
         await this.esQueue.add('update', {
             operation: 'update',
             indexName,
             id,
-            body,
+            doc: doc,
         });
+        console.log(`📤 Job added: update/${indexName}/${id}`);
     }
 
     async deleteAsync(indexName: ElasticTypes, id: string) {
@@ -31,5 +32,6 @@ export class ElasticSearchProducer {
             indexName,
             id,
         });
+        console.log(`📤 Job added: delete/${indexName}/${id}`);
     }
 }

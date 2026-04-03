@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { SearchService } from '../../../search';
@@ -12,17 +12,14 @@ export class ElasticsearchProcessor extends WorkerHost {
         super();
     }
     async process(job: Job, token?: string): Promise<ESJobResult> {
-        const { operation, indexName, id, document } = job.data;
-
-        this.logger.debug(`Processing ${operation} for ${indexName}/${id}`);
-
+        const { operation, indexName, id, doc } = job.data;
         try {
             switch (operation) {
                 case 'index':
-                    await this.searchService.indexDocument(indexName, id, document);
+                    await this.searchService.indexDocument(indexName, id, doc);
                     return { operation: 'index', success: true };
                 case 'update':
-                    await this.searchService.updateDocument(indexName, id, document);
+                    await this.searchService.updateDocument(indexName, id, doc);
                     return { operation: 'update', success: true };
                 case 'delete':
                     await this.searchService.deleteDocument(indexName, id);
@@ -31,8 +28,17 @@ export class ElasticsearchProcessor extends WorkerHost {
                     throw new Error(`Unknown operation: ${operation}`);
             }
         } catch (error) {
-            this.logger.error(`Failed to ${operation}: ${error.message}`);
+            // this.logger.error(`Failed to ${operation}: ${error.message}`);
             throw error;
         }
+    }
+    @OnWorkerEvent('completed')
+    onCompleted(job: Job) {
+        this.logger.log(`✔ Job ${job.id} выполнена`);
+    }
+
+    @OnWorkerEvent('failed')
+    async onFailed(job: Job, err: Error) {
+        this.logger.error(`🧨 Job ${job.id} завершилась ошибкой`, err.stack || err.message);
     }
 }

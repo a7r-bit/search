@@ -7,7 +7,6 @@ import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
-import { SearchService } from '../search';
 import { Prisma } from '@prisma/client';
 import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
@@ -20,7 +19,6 @@ export class DocumentVersionService {
         private readonly prisma: PrismaService,
         private readonly fileStorageService: FileStorageService,
         private readonly documentConversionService: DocumentConversionService,
-        private readonly searchService: SearchService,
         private readonly esProducer: ElasticSearchProducer,
     ) {}
     private async getLastVersion(nodeId: string, tx: Prisma.TransactionClient): Promise<number> {
@@ -153,9 +151,6 @@ export class DocumentVersionService {
         const ext = path.extname(filePath).toLocaleLowerCase();
 
         const isPDF = ext == '.pdf';
-        // const savedDir = isPDF ? "./uploads/converted" : "./uploads/original";
-
-        // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir)
 
         const documentVersion = await this.prisma.$transaction(async (tx) => {
             const lastVersion = await this.getLastVersion(nodeId, tx);
@@ -232,13 +227,6 @@ export class DocumentVersionService {
             version: updatedDocumentVersion.version,
         });
 
-        // await this.searchService.updateDocument(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
-        //     nodeId: updatedDocumentVersion.nodeId,
-        //     fileName: updatedDocumentVersion.mediaFile?.fileName,
-        //     path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
-        //     version: updatedDocumentVersion.version,
-        // });
-
         return new DocumentVersionDto(updatedDocumentVersion);
     }
 
@@ -251,8 +239,7 @@ export class DocumentVersionService {
         if (deletedDocument.mediaFile) {
             await this.fileStorageService.deleteFileFromDisk(deletedDocument.mediaFile.filePath);
         }
-        await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, deletedDocument.id);
-
+        await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
     }
 
@@ -274,7 +261,7 @@ export class DocumentVersionService {
                 await this.fileStorageService.deleteFileFromDisk(doc.mediaFile.filePath);
             }
             try {
-                await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
+                await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, doc.id);
             } catch (e) {
                 this.logger.error('Error deleting document from elastic', e);
             }

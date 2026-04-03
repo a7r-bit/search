@@ -12,5 +12,5 @@ export interface ESJobData {
     indexName: ElasticTypes;
     operation: ESOperation;
     id: string;
-    body?: any;
+    doc?: any;
 }
