@@ -1,6 +1,5 @@
 export * from './auth';
 export * from './document-version';
-export * from './emplayees_parser';
 export * from './global-search';
 export * from './liked-node';
 export * from './node';

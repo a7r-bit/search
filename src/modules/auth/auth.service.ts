@@ -3,7 +3,7 @@ import { UserService } from '../user/user.service';
 import { RoleService } from '../role';
 import { PayloadDTO, TokenService } from '../token';
 import { PoliticService } from '../politic/politic.service';
-import { EmplayersParserService } from '../emplayees_parser/emplayees_parser.service';
+import { EmployeesParserService } from '../../infrastructure/employees-parser';
 import { PrismaService } from '../prisma';
 import { RequestUser } from '../../common/types/request-user';
 
@@ -16,15 +16,15 @@ export class AuthService {
         private readonly roleService: RoleService,
         private readonly tokenService: TokenService,
         private readonly groupService: PoliticService,
-        private readonly emplayerService: EmplayersParserService,
+        private readonly employeesService: EmployeesParserService,
         private readonly prisma: PrismaService,
     ) { }
     async signIn(req: any) {
         const reqUser: RequestUser = req.user;
 
-        const userExternal = await this.emplayerService.getUserByTabNumber(reqUser.uidNumber);
+        const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
 
-        const politicGroups = await this.emplayerService.getDepartmentArrayFromHierarchy(userExternal.departments);
+        const politicGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
 
         const user = await this.prisma.user.upsert({
             where: { uidNumber: userExternal['tab_num'] },

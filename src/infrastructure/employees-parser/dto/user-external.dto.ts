@@ -2,15 +2,13 @@ import { Expose, Type } from 'class-transformer';
 
 export class UserExternalDto {
     @Expose()
-    id: string;
-    @Expose()
-    surname: string;
+    tab_num: string;
     @Expose()
     fname: string;
     @Expose()
-    lname: string;
+    surname: string;
     @Expose()
-    tab_num: string;
+    mname: string;
     @Expose()
     @Type(() => DepartmentExternalDto)
     departments: DepartmentExternalDto[];
@@ -19,7 +17,7 @@ export class UserExternalDto {
 export class DepartmentExternalDto {
     @Expose()
     id: string;
-    @Expose({ name: 'title' })
+    @Expose()
     name: string;
     @Type(() => DepartmentExternalDto)
     children?: DepartmentExternalDto[];

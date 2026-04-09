@@ -6,10 +6,10 @@ import { AppService } from './app.service';
 import { AccessGuard } from './common/guards/access.guard';
 import { ScopeGuard } from './common/guards/scope.guard';
 import { S3Module } from './infrastructure/s3';
+import { EmployeesParserModule } from './infrastructure/employees-parser';
 import {
     AuthModule,
     DocumentVersionModule,
-    EmplayersParserModule,
     GlobalSearchModule,
     LikedNodeModule,
     NodeModule,
@@ -31,7 +31,7 @@ import {
         LikedNodeModule,
         GlobalSearchModule,
         PoliticModule,
-        EmplayersParserModule,
+        EmployeesParserModule,
         S3Module,
     ],
     controllers: [AppController],

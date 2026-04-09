@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { PoliticService } from './politic.service';
 import { PoliticController } from './politic.controller';
-import { EmplayersParserModule } from '../emplayees_parser';
+import { EmployeesParserModule } from '../../infrastructure/employees-parser';
 
 @Module({
-    imports: [EmplayersParserModule],
+    imports: [EmployeesParserModule],
     controllers: [PoliticController],
     providers: [PoliticService],
     exports: [PoliticService],

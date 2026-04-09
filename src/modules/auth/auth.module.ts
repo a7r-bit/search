@@ -6,11 +6,11 @@ import { UserModule } from '../user';
 import { RoleModule } from '../role';
 import { TokenModule } from '../token';
 import { PoliticModule } from '../politic';
-import { EmplayersParserModule } from '../emplayees_parser';
+import { EmployeesParserModule } from '../../infrastructure/employees-parser';
 
 @Module({
     controllers: [AuthController],
-    imports: [UserModule, RoleModule, TokenModule, PoliticModule, EmplayersParserModule],
+    imports: [UserModule, RoleModule, TokenModule, PoliticModule, EmployeesParserModule],
     providers: [AuthService, LdapStrategy],
 })
 export class AuthModule { }

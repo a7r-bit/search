@@ -3,14 +3,14 @@ import { PrismaService } from '../prisma';
 import { CreateGroupDTO } from './dto/create-group.dto';
 import { isUUID } from 'class-validator';
 import { Group, NodePermissionType } from '@prisma/client';
-import { EmplayersParserService } from '../emplayees_parser/emplayees_parser.service';
+import { EmployeesParserService } from '../../infrastructure/employees-parser';
 import { toGroupDTO } from './dto/group-mapper';
 
 @Injectable()
 export class PoliticService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly employeesParserService: EmplayersParserService,
+        private readonly employeesParserService: EmployeesParserService,
     ) {}
 
     private async getGroupById(groupId: string) {
