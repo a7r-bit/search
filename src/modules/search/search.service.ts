@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { ElasticTypes } from '../../common/constants';
 
@@ -108,7 +108,7 @@ export class SearchService {
         });
     }
 
-    async updateDocument<T>(index: ElasticTypes, id: string, document) {
+    async updateDocument<T>(index: ElasticTypes, id: string, document: T) {
         return await this.elasticSearchService.update<T>({
             index,
             id,

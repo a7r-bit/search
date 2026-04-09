@@ -4,27 +4,44 @@ import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node-dto.mapper';
 import { NodeDto } from './dto/node.dto';
 import { PrismaService } from '../prisma';
-import { SearchService } from '../search';
 import { DocumentVersionService } from '../document-version';
 import { ElasticTypes } from '../../common/constants';
 import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
-import { NodeIndexDTO } from '../../common/elasic-search-models';
 import { PathPart } from '../../common/types/path-part.dto';
-import { NodePermissionType, NodeType } from '@prisma/client';
+import { Node, NodePermissionType, NodeType, Prisma, User } from '@prisma/client';
 import { ListNodesQueryDto, toNodeWithPermissionsDto } from './dto';
 import { PoliticService } from '../politic/politic.service';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
+import { NodeIndexProps } from '../../common/elasic-search-models';
+import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
+import { PaginateResult, paginator } from '../../common/paginator/paginator';
+
+const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class NodeService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly searchService: SearchService,
         private readonly documentVersionService: DocumentVersionService,
         private readonly politicService: PoliticService,
-    ) { }
+        private readonly esProducer: ElasticSearchProducer,
+    ) {}
+
+    async findMany({
+        where,
+        orderBy,
+        page = 1,
+        perPage = 10,
+    }: {
+        where?: Prisma.NodeWhereInput;
+        orderBy?: Prisma.NodeOrderByWithRelationInput;
+        page?: number;
+        perPage?: number;
+    }): Promise<PaginateResult<Node>> {
+        return paginate(this.prisma.node, { where, orderBy }, { page, perPage });
+    }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);
@@ -37,10 +54,16 @@ export class NodeService {
                 description: dto.description ?? null,
             },
         });
-        await this.searchService.indexDocument(
+
+        await this.esProducer.indexAsync(
             ElasticTypes.Node,
             created.id,
-            instanceToPlain(new NodeIndexDTO(created.type, created.parentId, created.name, created.description)),
+            instanceToPlain<NodeIndexProps>({
+                name: created.name,
+                type: created.type,
+                description: created.description,
+                parentId: created.parentId,
+            }),
         );
         return toNodeDto(created);
     }
@@ -81,20 +104,24 @@ export class NodeService {
         return parts;
     }
 
-    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<NodeWithPermissionsDto[]> {
-        const { parentId, type } = query;
-        const result: NodeWithPermissionsDto[] = [];
+    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<PaginateResult<NodeWithPermissionsDto>> {
+        const { parentId, type, page = 1, perPage = 10 } = query;
         const isOwner = userReq.activeRole === 'Owner';
 
-        const nodes = await this.prisma.node.findMany({
-            where: {
-                parentId: parentId ? parentId : null,
-                ...(type && { type }),
+        const paginatedNodes = await paginate<Node, Prisma.NodeFindManyArgs>(
+            this.prisma.node,
+            {
+                where: {
+                    parentId: parentId ? parentId : null,
+                    ...(type && { type }),
+                },
+                orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
             },
-            orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
-        });
+            { page, perPage },
+        );
 
-        for (const node of nodes) {
+        const result: NodeWithPermissionsDto[] = [];
+        for (const node of paginatedNodes.data) {
             let permissions: NodePermissionType[];
 
             if (isOwner) {
@@ -105,7 +132,10 @@ export class NodeService {
             result.push(toNodeWithPermissionsDto(toNodeDto(node), permissions));
         }
 
-        return result;
+        return {
+            ...paginatedNodes,
+            data: result,
+        };
     }
 
     async update(id: string, dto: UpdateNodeDto): Promise<NodeDto> {
@@ -123,10 +153,15 @@ export class NodeService {
             },
         });
 
-        await this.searchService.updateDocument(
+        await this.esProducer.indexAsync(
             ElasticTypes.Node,
             updated.id,
-            instanceToPlain(new NodeIndexDTO(updated.type, updated.parentId, updated.name, updated.description)),
+            instanceToPlain<NodeIndexProps>({
+                name: updated.name,
+                type: updated.type,
+                description: updated.description,
+                parentId: updated.parentId,
+            }),
         );
 
         return toNodeDto(updated);
@@ -158,11 +193,17 @@ export class NodeService {
             data: { parentId: newParentId },
         });
 
-        await this.searchService.updateDocument(
+        await this.esProducer.indexAsync(
             ElasticTypes.Node,
             moved.id,
-            instanceToPlain(new NodeIndexDTO(moved.type, moved.parentId, moved.name, moved.description)),
+            instanceToPlain<NodeIndexProps>({
+                name: moved.name,
+                type: moved.type,
+                description: moved.description,
+                parentId: moved.parentId,
+            }),
         );
+
         return toNodeDto(moved);
     }
 
@@ -182,7 +223,6 @@ export class NodeService {
         switch (node.type) {
             case 'DIRECTORY':
                 {
-
                 }
                 break;
             case 'DOCUMENT':
@@ -196,9 +236,8 @@ export class NodeService {
 
         const deleteNode = await this.prisma.node.delete({ where: { id } });
         try {
-            await this.searchService.deleteDocument(ElasticTypes.Node, node.id);
-        } catch (_) {
-        }
+            await this.esProducer.deleteAsync(ElasticTypes.Node, node.id);
+        } catch (_) {}
         return toNodeDto(deleteNode);
     }
 

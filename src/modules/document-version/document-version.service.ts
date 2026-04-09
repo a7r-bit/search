@@ -2,15 +2,18 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { DocumentConversionService } from '../bullmq/document-conversion.service';
+import { DocumentConversionService } from '../bullmq/queues/document-conversion/document-conversion.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
-import { SearchService } from '../search';
 import { Prisma } from '@prisma/client';
 import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
+import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
+import { PaginateResult, paginator } from '../../common/paginator/paginator';
+
+const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class DocumentVersionService {
@@ -19,7 +22,7 @@ export class DocumentVersionService {
         private readonly prisma: PrismaService,
         private readonly fileStorageService: FileStorageService,
         private readonly documentConversionService: DocumentConversionService,
-        private readonly searchService: SearchService,
+        private readonly esProducer: ElasticSearchProducer,
     ) {}
     private async getLastVersion(nodeId: string, tx: Prisma.TransactionClient): Promise<number> {
         const lastVersion = await tx.documentVersion.findFirst({
@@ -41,12 +44,21 @@ export class DocumentVersionService {
         return isUnique ? false : true;
     }
 
-    async findAll(): Promise<DocumentVersionDto[]> {
-        const documents = await this.prisma.documentVersion.findMany({
-            orderBy: { nodeId: 'desc' },
-            include: { mediaFile: true },
-        });
-        return documents.map((el) => new DocumentVersionDto(el));
+    async findAll(filterDto?: DocumentVersionFilterDto): Promise<PaginateResult<DocumentVersionDto>> {
+        const { page = 1, perPage = 10 } = filterDto || {};
+        const documents = await paginate<any, Prisma.DocumentVersionFindManyArgs>(
+            this.prisma.documentVersion,
+            {
+                orderBy: { nodeId: 'desc' },
+                include: { mediaFile: true },
+            },
+            { page, perPage },
+        );
+
+        return {
+            ...documents,
+            data: documents.data.map((el) => new DocumentVersionDto(el)),
+        };
     }
 
     async findOneById(id: string): Promise<DocumentVersionDto> {
@@ -62,8 +74,12 @@ export class DocumentVersionService {
         return new DocumentVersionDto(foundVersion);
     }
 
-    async findByNodeId(nodeId: string, filterDto?: DocumentVersionFilterDto, sort?: SortingParam): Promise<DocumentVersionDto[]> {
-        const { fileName, conversionStatus } = filterDto || {};
+    async findByNodeId(
+        nodeId: string,
+        filterDto?: DocumentVersionFilterDto,
+        sort?: SortingParam,
+    ): Promise<PaginateResult<DocumentVersionDto>> {
+        const { fileName, conversionStatus, page = 1, perPage = 10 } = filterDto || {};
 
         const where: Prisma.DocumentVersionWhereInput = {
             nodeId,
@@ -87,13 +103,20 @@ export class DocumentVersionService {
             orderBy.push({ version: 'asc' });
         }
 
-        const documents = await this.prisma.documentVersion.findMany({
-            where: where,
-            orderBy: orderBy,
-            include: { mediaFile: true },
-        });
+        const documents = await paginate<any, Prisma.DocumentVersionFindManyArgs>(
+            this.prisma.documentVersion,
+            {
+                where: where,
+                orderBy: orderBy,
+                include: { mediaFile: true },
+            },
+            { page, perPage },
+        );
 
-        return documents.map((el) => new DocumentVersionDto(el));
+        return {
+            ...documents,
+            data: documents.data.map((el) => new DocumentVersionDto(el)),
+        };
     }
 
     async create(createDocumentVersionDto: CreateDocumentVersionDto, file: Express.Multer.File): Promise<DocumentVersionDto> {
@@ -151,9 +174,6 @@ export class DocumentVersionService {
         const ext = path.extname(filePath).toLocaleLowerCase();
 
         const isPDF = ext == '.pdf';
-        // const savedDir = isPDF ? "./uploads/converted" : "./uploads/original";
-
-        // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir)
 
         const documentVersion = await this.prisma.$transaction(async (tx) => {
             const lastVersion = await this.getLastVersion(nodeId, tx);
@@ -207,6 +227,7 @@ export class DocumentVersionService {
                 throw new BadRequestException(`Документ с версией ${version} уже существует`);
             }
         }
+
         const updatedDocumentVersion = await this.prisma.documentVersion.update({
             where: { id },
             data: {
@@ -221,7 +242,8 @@ export class DocumentVersionService {
                 mediaFile: true,
             },
         });
-        await this.searchService.updateDocument(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
+
+        await this.esProducer.updateAsync(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
             nodeId: updatedDocumentVersion.nodeId,
             fileName: updatedDocumentVersion.mediaFile?.fileName,
             path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
@@ -240,8 +262,7 @@ export class DocumentVersionService {
         if (deletedDocument.mediaFile) {
             await this.fileStorageService.deleteFileFromDisk(deletedDocument.mediaFile.filePath);
         }
-        await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, deletedDocument.id);
-
+        await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
     }
 
@@ -263,7 +284,7 @@ export class DocumentVersionService {
                 await this.fileStorageService.deleteFileFromDisk(doc.mediaFile.filePath);
             }
             try {
-                await this.searchService.deleteDocument(ElasticTypes.DocumentVersion, doc.id);
+                await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, doc.id);
             } catch (e) {
                 this.logger.error('Error deleting document from elastic', e);
             }

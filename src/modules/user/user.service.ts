@@ -4,23 +4,22 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserWithRoles, UserWithRolesAndPermissions } from './types';
 import { Prisma, User } from '@prisma/client';
+import { PaginateResult, paginator } from '../../common/paginator/paginator';
+
+const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class UserService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async findAll(): Promise<User[]>;
-    async findAll(options: { includeRoles: true }): Promise<UserWithRoles[]>;
-    async findAll(options: { includeRoles: true; includePermissions: true }): Promise<UserWithRolesAndPermissions[]>;
     async findAll(options?: {
         includeRoles?: boolean;
         includePermissions?: boolean;
-    }): Promise<User[] | UserWithRoles[] | UserWithRolesAndPermissions[]>;
-
-    async findAll(options?: {
-        includeRoles?: boolean;
-        includePermissions?: boolean;
-    }): Promise<User[] | UserWithRoles[] | UserWithRolesAndPermissions[]> {
+        page?: number;
+        perPage?: number;
+    }): Promise<PaginateResult<User | UserWithRoles | UserWithRolesAndPermissions>> {
+        const page = options?.page ?? 1;
+        const perPage = options?.perPage ?? 10;
         const include: Prisma.UserInclude = {};
 
         if (options?.includeRoles) {
@@ -29,9 +28,7 @@ export class UserService {
             };
         }
 
-        return await this.prisma.user.findMany({
-            include: Object.keys(include).length > 0 ? include : undefined,
-        });
+        return await paginate(this.prisma.user, { include: Object.keys(include).length > 0 ? include : undefined }, { page, perPage });
     }
 
     async findOne(id: string): Promise<User>;

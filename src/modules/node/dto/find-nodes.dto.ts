@@ -1,20 +1,16 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { NodeType } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class ListNodesQueryDto {
-    @ApiPropertyOptional({ description: 'Node Id родительской Node' })
-    @IsOptional()
-    @IsUUID()
-    parentId?: string;
-
+export class FindNodeDto {
     @ApiPropertyOptional({ enum: NodeType })
     @IsOptional()
     @IsString()
     type?: NodeType;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
+        required: false,
         description: 'Номер страницы',
         default: 1,
         minimum: 1,
@@ -25,7 +21,8 @@ export class ListNodesQueryDto {
     @Min(1)
     page?: number = 1;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
+        required: false,
         description: 'Элементов на странице',
         default: 10,
         minimum: 1,
@@ -37,4 +34,12 @@ export class ListNodesQueryDto {
     @Min(1)
     @Max(100)
     perPage?: number = 10;
+
+    @ApiProperty({
+        required: false,
+        description: 'Поиск по имени',
+    })
+    @IsOptional()
+    @IsString()
+    search?: string;
 }

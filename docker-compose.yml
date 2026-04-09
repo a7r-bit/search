@@ -5,14 +5,15 @@ services:
             dockerfile: ./docker/Dockerfile
 
         container_name: nest_app
-
         env_file:
             - .env
+
+        command: sh ./docker/init-prisma.sh
 
         environment:
             NODE_ENV: development
             HOST: 0.0.0.0
-            PORT: 3000
+            PORT: ${PORT}
 
             DATABASE_URL: ${DATABASE_URL}
             REDIS_HOST: ${REDIS_HOST}
@@ -38,16 +39,11 @@ services:
                 condition: service_healthy
             elasticsearch:
                 condition: service_started
-            openldap:
-                condition: service_started
             gotenberg:
                 condition: service_started
 
-        networks:
-            - appnet
-
     postgres:
-        image: postgres:15-alpine
+        image: dockerhub.mingas.by/postgres:15.2
         container_name: postgres
 
         environment:
@@ -56,7 +52,7 @@ services:
             POSTGRES_DB: Search
 
         ports:
-            - '5432:5432'
+            - '15432:5432'
 
         volumes:
             - pgdata:/var/lib/postgresql/data
@@ -68,15 +64,12 @@ services:
             timeout: 3s
             retries: 10
 
-        networks:
-            - appnet
-
     redis:
-        image: redis:7
-        container_name: redis
+        image: dockerhub.mingas.by/redis:7.0.5-alpine
+        container_name: redis-art
 
         ports:
-            - '6379:6379'
+            - '16379:6379'
 
         healthcheck:
             test: ['CMD', 'redis-cli', 'ping']
@@ -84,11 +77,9 @@ services:
             timeout: 3s
             retries: 10
 
-        networks:
-            - appnet
-
     elasticsearch:
-        image: timaboks/elastic-pluggin
+        image: dockerhub.mingas.by/elasticsearch:elastic-pluggin
+        container_name: elasticsearch
         env_file:
             - .env
 
@@ -109,63 +100,14 @@ services:
         volumes:
             - esdata:/usr/share/elasticsearch/data
 
-        networks:
-            - appnet
-
-    openldap:
-        image: osixia/openldap:1.5.0
-        container_name: openldap
-
-        environment:
-            LDAP_ORGANISATION: 'MyCompany'
-            LDAP_DOMAIN: 'mycompany.local'
-            LDAP_ADMIN_PASSWORD: admin
-
-        ports:
-            - '389:389'
-
-        volumes:
-            - ldap_data:/var/lib/ldap
-            - ldap_config:/etc/ldap/slapd.d
-
-        networks:
-            - appnet
-
-    phpldapadmin:
-        image: osixia/phpldapadmin:0.8.0
-        container_name: phpldapadmin
-
-        environment:
-            PHPLDAPADMIN_LDAP_HOSTS: openldap
-            PHPLDAPADMIN_HTTPS: 'false'
-
-        ports:
-            - '8081:80'
-
-        depends_on:
-            - openldap
-
-        networks:
-            - appnet
-
     gotenberg:
-        image: gotenberg/gotenberg:8
+        image: dockerhub.mingas.by/gotenberg:8
         container_name: gotenberg
 
         ports:
             - '3001:3000'
 
-        networks:
-            - appnet
-
 volumes:
     pgdata:
     node_modules:
     esdata:
-    ldap_data:
-    ldap_config:
-
-networks:
-    appnet:
-        name: appnet
-        driver: bridge
