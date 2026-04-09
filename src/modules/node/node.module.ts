@@ -3,7 +3,7 @@ import { NodeController } from './node.controller';
 import { NodeService } from './node.service';
 import { DocumentVersionModule } from '../document-version';
 import { CheckGroupPolitic } from '../../common/guards/group-politic.guard';
-import { PoliticModule } from '../politic/politic.module';
+import { PoliticModule } from '../politic';
 import { BullmqModule } from '../bullmq';
 
 @Module({

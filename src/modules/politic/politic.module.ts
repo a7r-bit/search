@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PoliticService } from './politic.service';
 import { PoliticController } from './politic.controller';
-import { EmplayersParserModule } from '../emplayees_parser/emplayees_parser.module';
+import { EmplayersParserModule } from '../emplayees_parser';
 
 @Module({
     imports: [EmplayersParserModule],

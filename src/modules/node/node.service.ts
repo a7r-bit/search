@@ -9,13 +9,16 @@ import { ElasticTypes } from '../../common/constants';
 import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { PathPart } from '../../common/types/path-part.dto';
-import { NodePermissionType, NodeType } from '@prisma/client';
+import { Node, NodePermissionType, NodeType, Prisma, User } from '@prisma/client';
 import { ListNodesQueryDto, toNodeWithPermissionsDto } from './dto';
 import { PoliticService } from '../politic/politic.service';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
 import { NodeIndexProps } from '../../common/elasic-search-models';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
+import { PaginateResult, paginator } from '../../common/paginator/paginator';
+
+const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class NodeService {
@@ -25,6 +28,20 @@ export class NodeService {
         private readonly politicService: PoliticService,
         private readonly esProducer: ElasticSearchProducer,
     ) {}
+
+    async findMany({
+        where,
+        orderBy,
+        page = 1,
+        perPage = 10,
+    }: {
+        where?: Prisma.NodeWhereInput;
+        orderBy?: Prisma.NodeOrderByWithRelationInput;
+        page?: number;
+        perPage?: number;
+    }): Promise<PaginateResult<Node>> {
+        return paginate(this.prisma.node, { where, orderBy }, { page, perPage });
+    }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);

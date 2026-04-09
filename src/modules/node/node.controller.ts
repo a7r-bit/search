@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { NodeService } from './node.service';
-import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { ListNodesQueryDto } from './dto/list-nodes.query';
 import { MoveNodeDto, UpdateNodeDto } from './dto';
@@ -13,11 +13,26 @@ import { CustomParseUUIDPipe } from '../../common/pipes';
 import { CheckGroupPolitic } from '../../common/guards/group-politic.guard';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
+import { FindNodeDto } from './dto/find-nodes.dto';
+import { Prisma } from '@prisma/client';
+import { ApiPaginatedResponse } from '../../common/paginator/pagination.decorator';
 
 @Controller('node')
+@ApiBearerAuth('access-token')
 export class NodeController {
     constructor(private readonly nodeService: NodeService) {}
 
+    @Get()
+    @ApiPaginatedResponse(NodeDto /* { description: 'Получение всех нод', isArray: true }*/)
+    async getAllNodes(@Query() query: FindNodeDto) {
+        const { page, perPage, type, search } = query;
+        const where: Prisma.NodeWhereInput = {};
+        if (type) where.type = type;
+        if (search) where.name = { contains: search, mode: 'insensitive' };
+
+        return this.nodeService.findMany({ where, orderBy: { updatedAt: 'asc' }, page, perPage });
+    }
+    // ------------------------
     @Post()
     @ApiOperation({
         summary: 'Создание Node (type: Directory)',
