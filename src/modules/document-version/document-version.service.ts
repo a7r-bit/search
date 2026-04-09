@@ -12,6 +12,7 @@ import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
 import { PaginateResult, paginator } from '../../common/paginator/paginator';
+import { S3Service } from '../../infrastructure/s3/s3.service';
 
 const paginate = paginator({ perPage: 10 });
 
@@ -20,10 +21,18 @@ export class DocumentVersionService {
     private logger = new Logger(DocumentVersionService.name);
     constructor(
         private readonly prisma: PrismaService,
-        private readonly fileStorageService: FileStorageService,
+        // private readonly fileStorageService: FileStorageService,
         private readonly documentConversionService: DocumentConversionService,
         private readonly esProducer: ElasticSearchProducer,
+        private readonly s3Service:S3Service
     ) {}
+
+    private normalizeUploadedFileName(fileName: string): string {
+        const decoded = Buffer.from(fileName, 'latin1').toString('utf8');
+        const hasMojibake = /[ÐÑ]/.test(fileName);
+        return hasMojibake ? decoded : fileName;
+    }
+
     private async getLastVersion(nodeId: string, tx: Prisma.TransactionClient): Promise<number> {
         const lastVersion = await tx.documentVersion.findFirst({
             where: { nodeId },
@@ -127,79 +136,81 @@ export class DocumentVersionService {
         if (!node) {
             throw new NotFoundException('Родительский докумет не найден');
         }
-
-        const ext = path.extname(file.originalname).toLocaleLowerCase();
+        const normalizedFileName = this.normalizeUploadedFileName(file.originalname);
+        const ext = path.extname(normalizedFileName).toLocaleLowerCase();
 
         const isPDF = ext == '.pdf';
-        const savedDir = isPDF ? './uploads/converted' : './uploads/original';
+        // const savedDir = isPDF ? './uploads/converted' : './uploads/original';
 
-        const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir);
-
+        // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir);
+        const {key}  =await this.s3Service.uploadFile(file, 'original')
         const documentVersion = await this.prisma.$transaction(async (tx) => {
             const lastVersion = await this.getLastVersion(nodeId, tx);
             const newVersion = await tx.documentVersion.create({
-                data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
+                data: { 
+                    nodeId, 
+                    version: lastVersion + 1,
+                    conversionStatus: 'PENDING',
+                    mediaFile:
+                    {
+                        create:{
+                            filePath:key,
+                            fileName: path.basename(normalizedFileName),
+                            extention: ext,
+                        }
+                    }
+                }
             });
-            await tx.mediaFile.create({
-                data: {
-                    filePath: savedFilePath,
-                    fileName: path.basename(
-                        await this.fileStorageService.convertOriginalName(file.originalname),
-                        path.extname(file.originalname),
-                    ),
-                    extention: path.extname(file.originalname),
-                    documentVersionId: newVersion.id,
-                },
-            });
+           
 
             return await tx.documentVersion.findUniqueOrThrow({
                 where: { id: newVersion.id },
                 include: { mediaFile: true },
             });
         });
-        await this.documentConversionService.addConversionJob(documentVersion.id, savedFilePath, isPDF);
+        await this.documentConversionService.addConversionJob({documentVersionId:documentVersion.id, key:key, isPDF});
 
         return new DocumentVersionDto(documentVersion);
     }
 
-    async createFromPath(createDocumentVersionDto: CreateDocumentVersionDto, filePath: string): Promise<DocumentVersionDto> {
-        const { nodeId } = createDocumentVersionDto;
-        const node = await this.prisma.node.findUnique({
-            where: { id: nodeId, type: 'DOCUMENT' },
-        });
-        if (!node) {
-            throw new NotFoundException('Родительский докумет не найден');
-        }
+    // async createFromPath(createDocumentVersionDto: CreateDocumentVersionDto, filePath: string): Promise<DocumentVersionDto> {
+    //     const { nodeId } = createDocumentVersionDto;
+    //     const node = await this.prisma.node.findUnique({
+    //         where: { id: nodeId, type: 'DOCUMENT' },
+    //     });
+    //     if (!node) {
+    //         throw new NotFoundException('Родительский докумет не найден');
+    //     }
 
-        const ext = path.extname(filePath).toLocaleLowerCase();
+    //     const ext = path.extname(filePath).toLocaleLowerCase();
 
-        const isPDF = ext == '.pdf';
+    //     const isPDF = ext == '.pdf';
 
-        const documentVersion = await this.prisma.$transaction(async (tx) => {
-            const lastVersion = await this.getLastVersion(nodeId, tx);
+    //     const documentVersion = await this.prisma.$transaction(async (tx) => {
+    //         const lastVersion = await this.getLastVersion(nodeId, tx);
 
-            const newVersion = await tx.documentVersion.create({
-                data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
-            });
+    //         const newVersion = await tx.documentVersion.create({
+    //             data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
+    //         });
 
-            await tx.mediaFile.create({
-                data: {
-                    filePath: filePath,
-                    fileName: path.basename(filePath, ext),
-                    extention: ext,
-                    documentVersionId: newVersion.id,
-                },
-            });
+    //         await tx.mediaFile.create({
+    //             data: {
+    //                 filePath: filePath,
+    //                 fileName: path.basename(filePath, ext),
+    //                 extention: ext,
+    //                 documentVersionId: newVersion.id,
+    //             },
+    //         });
 
-            return await tx.documentVersion.findUniqueOrThrow({
-                where: { id: newVersion.id },
-                include: { mediaFile: true },
-            });
-        });
-        await this.documentConversionService.addConversionJob(documentVersion.id, filePath, isPDF);
+    //         return await tx.documentVersion.findUniqueOrThrow({
+    //             where: { id: newVersion.id },
+    //             include: { mediaFile: true },
+    //         });
+    //     });
+    //     await this.documentConversionService.addConversionJob(documentVersion.id, filePath, isPDF);
 
-        return new DocumentVersionDto(documentVersion);
-    }
+    //     return new DocumentVersionDto(documentVersion);
+    // }
 
     async update(id: string, updateDocumentVersionDto: UpdateDocumentVersionDto): Promise<DocumentVersionDto> {
         const { version, fileName } = updateDocumentVersionDto;
@@ -260,7 +271,8 @@ export class DocumentVersionService {
             include: { mediaFile: true },
         });
         if (deletedDocument.mediaFile) {
-            await this.fileStorageService.deleteFileFromDisk(deletedDocument.mediaFile.filePath);
+            await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath)
+            // await this.fileStorageService.deleteFileFromDisk(deletedDocument.mediaFile.filePath);
         }
         await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
@@ -281,7 +293,8 @@ export class DocumentVersionService {
         });
         for (const doc of deletedDocuments) {
             if (doc.mediaFile) {
-                await this.fileStorageService.deleteFileFromDisk(doc.mediaFile.filePath);
+                await this.s3Service.deleteFile(doc.mediaFile.filePath)
+                // await this.fileStorageService.deleteFileFromDisk(doc.mediaFile.filePath);
             }
             try {
                 await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, doc.id);

@@ -9,6 +9,7 @@ import { SearchModule } from '../search';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ElasticSearchProducer } from './queues/elasticsearch/elasticsearch.producer';
 import { ElasticsearchProcessor } from './queues/elasticsearch/elasticsearch.processor';
+import { S3Module } from '../../infrastructure/s3';
 
 @Module({
     imports: [
@@ -51,6 +52,7 @@ import { ElasticsearchProcessor } from './queues/elasticsearch/elasticsearch.pro
         FileStorageModule,
         PdfModule,
         SearchModule,
+        S3Module,
     ],
     providers: [DocumentConversionProcessor, DocumentConversionService, ElasticsearchProcessor, ElasticSearchProducer],
     exports: [DocumentConversionService, ElasticSearchProducer],

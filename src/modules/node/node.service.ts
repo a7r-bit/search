@@ -29,19 +29,7 @@ export class NodeService {
         private readonly esProducer: ElasticSearchProducer,
     ) {}
 
-    async findMany({
-        where,
-        orderBy,
-        page = 1,
-        perPage = 10,
-    }: {
-        where?: Prisma.NodeWhereInput;
-        orderBy?: Prisma.NodeOrderByWithRelationInput;
-        page?: number;
-        perPage?: number;
-    }): Promise<PaginateResult<Node>> {
-        return paginate(this.prisma.node, { where, orderBy }, { page, perPage });
-    }
+   
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);

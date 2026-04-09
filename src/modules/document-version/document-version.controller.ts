@@ -103,18 +103,6 @@ export class DocumentVersionController {
         description: 'Форма для загрузки файла и указания ID node',
         schema: {
             type: 'object',
-            properties: {
-                nodeId: {
-                    type: 'string',
-                    format: 'uuid',
-                    example: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
-                },
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                    description: 'Файл документа (.pdf, .doc, .docx)',
-                },
-            },
             required: ['nodeId', 'file'],
         },
     })

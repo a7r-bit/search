@@ -69,6 +69,23 @@ export class S3Service {
         return { key };
     }
 
+    async uploadBufferAsPdf(buffer: Buffer, prefix: Prefix, extension = '.pdf', contentType = 'application/pdf') {
+        const uuid = crypto.randomUUID();
+        const key = `${prefix}/${uuid}${extension}`;
+
+        await this.s3Client.send(
+            new PutObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+                Body: buffer,
+                ContentType: contentType,
+                ACL: 'authenticated-read',
+            }),
+        );
+
+        return { key };
+    }
+
     async getFileUrl(key: string, expiresIn = 3600) {
         const command = new GetObjectCommand({
             Bucket: this.bucket,
@@ -81,6 +98,19 @@ export class S3Service {
 
         const url = await getSignedUrl(this.s3Client, command, { expiresIn });
         return { url };
+    }
+
+    async getFileBuffer(key:string):Promise<Buffer>{
+        const command = new GetObjectCommand({
+            Bucket:this.bucket,
+            Key:key,
+        });
+        if (!(await this.checkFileExists(key))) {
+            throw new NotFoundException('File not found');
+        }
+
+        const response = await this.s3Client.send(command)
+        return Buffer.from(await response.Body?.transformToByteArray())
     }
 
     async deleteFile(key: string) {

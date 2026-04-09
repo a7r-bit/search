@@ -23,7 +23,6 @@ export class AuthService {
         const reqUser: RequestUser = req.user;
 
         const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
-
         const politicGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
 
         const user = await this.prisma.user.upsert({

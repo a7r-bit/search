@@ -17,7 +17,7 @@ export class UserExternalDto {
 export class DepartmentExternalDto {
     @Expose()
     id: string;
-    @Expose()
+    @Expose({ name: 'title' })
     name: string;
     @Type(() => DepartmentExternalDto)
     children?: DepartmentExternalDto[];

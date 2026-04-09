@@ -7,9 +7,11 @@ import { FileStorageService } from '../../../file-storage/file-storage.service';
 import { PdfService } from '../../../pdf/pdf.service';
 import { SearchService } from '../../../search';
 import { instanceToPlain } from 'class-transformer';
-import * as fs from 'node:fs/promises';
 import { ElasticTypes } from '../../../../common/constants';
 import { DocumentVersionIndexDto } from '../../../../common/elasic-search-models';
+import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
+import { S3Service } from '../../../../infrastructure/s3/s3.service';
+import path from 'path';
 
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
@@ -19,13 +21,14 @@ export class DocumentConversionProcessor extends WorkerHost {
         private readonly fileStorageService: FileStorageService,
         private readonly pdfService: PdfService,
         private readonly searchService: SearchService,
+        private readonly s3Service: S3Service,
     ) {
         super();
     }
     private readonly logger = new Logger(DocumentConversionProcessor.name);
 
-    async process(job: Job<{ documentVersionId: string; filePath: string; isPDF: boolean }>) {
-        const { documentVersionId, filePath, isPDF } = job.data;
+    async process(job: Job<DocumentConversionJobDto>) {
+        const { documentVersionId, key, isPDF } = job.data;
         const mediaFile = await this.prisma.mediaFile.findUniqueOrThrow({
             where: { documentVersionId },
         });
@@ -35,14 +38,17 @@ export class DocumentConversionProcessor extends WorkerHost {
             data: { conversionStatus: 'IN_PROGRESS' },
         });
 
-        const pdfBuffer: Buffer = isPDF ? await fs.readFile(filePath) : await this.gotenbergService.convertDocxToPdf(filePath);
-        const outputFilePath = await this.fileStorageService.saveGeneratedFile(pdfBuffer, mediaFile.filePath);
+        const fileBuffer = await this.s3Service.getFileBuffer(key);
+
+        const fileName = path.basename(key);
+        const pdfBuffer: Buffer = isPDF ? fileBuffer : await this.gotenbergService.convertDocxToPdf(fileBuffer, fileName);
+        const { key: outputKey } = await this.s3Service.uploadBufferAsPdf(pdfBuffer, 'converted');
         const text = await this.pdfService.extractTextFromPdfByBuffer(pdfBuffer);
 
         await this.prisma.mediaFile.update({
             where: { id: mediaFile.id },
             data: {
-                filePath: outputFilePath,
+                filePath: outputKey,
                 extention: 'pdf',
             },
         });

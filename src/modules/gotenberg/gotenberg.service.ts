@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import FormData from 'form-data';
 import axios from 'axios';
-import { readFile } from 'fs/promises';
-import { basename } from 'path';
 import { ConfigService } from '@nestjs/config';
+import path from 'path';
 
 @Injectable()
 export class GotenbergService {
@@ -16,11 +15,20 @@ export class GotenbergService {
             throw new Error('GOTENBERG_HOST and GOTENBERG_PORT must be configured');
         }
     }
-    async convertDocxToPdf(pathToFile: string): Promise<Buffer> {
-        const file = await readFile(pathToFile);
-
+    async convertDocxToPdf(file: Buffer, originalFileName = 'document.docx'): Promise<Buffer> {
         const form = new FormData();
-        form.append('files', file, { filename: basename(pathToFile) });
+        const extension = path.extname(originalFileName).toLowerCase();
+        const contentType =
+            extension === '.doc'
+                ? 'application/msword'
+                : extension === '.docx'
+                  ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                  : 'application/octet-stream';
+
+        form.append('files', file, {
+            filename: originalFileName,
+            contentType,
+        });
 
         const res = await axios.post(`http://${this.host}:${this.port}/forms/libreoffice/convert`, form, {
             headers: form.getHeaders(),
