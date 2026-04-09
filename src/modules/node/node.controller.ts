@@ -16,6 +16,7 @@ import { RequestUser } from '../../common/types/request-user';
 import { FindNodeDto } from './dto/find-nodes.dto';
 import { Prisma } from '@prisma/client';
 import { ApiPaginatedResponse } from '../../common/paginator/pagination.decorator';
+import { PaginateResult } from '../../common/paginator/paginator';
 
 @Controller('node')
 @ApiBearerAuth('access-token')
@@ -55,17 +56,14 @@ export class NodeController {
       Если пользователь является Owner-ом, то он получает все дочерние элементы с правами доступа. 
       Если пользователь не является Owner-ом, то он получает только те дочерние элементы, к которым имеет доступ, с их правами доступа.`,
     })
-    @ApiOkResponse({
-        type: NodeWithPermissionsDto,
-        isArray: true,
-    })
+    @ApiPaginatedResponse(NodeWithPermissionsDto)
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
     @UseGuards(CheckGroupPolitic)
     async findChildren(
         @Query() query: ListNodesQueryDto,
         @Req() req,
         @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam,
-    ): Promise<NodeWithPermissionsDto[]> {
+    ): Promise<PaginateResult<NodeWithPermissionsDto>> {
         return await this.nodeService.listChildren(query, req.user as RequestUser, sort);
     }
 

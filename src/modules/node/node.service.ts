@@ -104,20 +104,24 @@ export class NodeService {
         return parts;
     }
 
-    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<NodeWithPermissionsDto[]> {
-        const { parentId, type } = query;
-        const result: NodeWithPermissionsDto[] = [];
+    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<PaginateResult<NodeWithPermissionsDto>> {
+        const { parentId, type, page = 1, perPage = 10 } = query;
         const isOwner = userReq.activeRole === 'Owner';
 
-        const nodes = await this.prisma.node.findMany({
-            where: {
-                parentId: parentId ? parentId : null,
-                ...(type && { type }),
+        const paginatedNodes = await paginate<Node, Prisma.NodeFindManyArgs>(
+            this.prisma.node,
+            {
+                where: {
+                    parentId: parentId ? parentId : null,
+                    ...(type && { type }),
+                },
+                orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
             },
-            orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
-        });
+            { page, perPage },
+        );
 
-        for (const node of nodes) {
+        const result: NodeWithPermissionsDto[] = [];
+        for (const node of paginatedNodes.data) {
             let permissions: NodePermissionType[];
 
             if (isOwner) {
@@ -128,7 +132,10 @@ export class NodeService {
             result.push(toNodeWithPermissionsDto(toNodeDto(node), permissions));
         }
 
-        return result;
+        return {
+            ...paginatedNodes,
+            data: result,
+        };
     }
 
     async update(id: string, dto: UpdateNodeDto): Promise<NodeDto> {

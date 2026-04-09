@@ -6,7 +6,7 @@ export const ApiPaginatedResponse = <TModel extends Type<any>>(
     model: TModel,
     options?: {
         description?: string;
-        isArray: boolean;
+        isArray?: boolean;
     },
 ) => {
     const description = options?.description || `Paginated list of ${model.name}`;
@@ -22,7 +22,7 @@ export const ApiPaginatedResponse = <TModel extends Type<any>>(
                         properties: {
                             data: {
                                 type: 'array',
-                                items: options?.isArray ? { $ref: getSchemaPath(model) } : { $ref: getSchemaPath(model) },
+                                items: { $ref: getSchemaPath(model) },
                                 description: `Array of ${model.name} objects`,
                             },
                             meta: {

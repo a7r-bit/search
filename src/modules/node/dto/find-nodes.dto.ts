@@ -1,10 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { NodeType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class FindNodeDto {
-    @ApiProperty({ enum: NodeType })
+    @ApiPropertyOptional({ enum: NodeType })
     @IsOptional()
     @IsString()
     type?: NodeType;
