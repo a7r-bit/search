@@ -4,6 +4,8 @@ export class UserExternalDto {
     @Expose()
     tab_num: string;
     @Expose()
+    ldap_tab_num: string;
+    @Expose()
     fname: string;
     @Expose()
     surname: string;

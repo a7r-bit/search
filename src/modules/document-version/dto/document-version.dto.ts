@@ -30,7 +30,7 @@ export class DocumentVersionDto {
     conversionStatus: ConversionStatus;
 
     @ApiProperty({
-        description: 'Файл, связанный с версией документа',
+        description: 'Метаданные S3-файла, связанного с версией документа',
         type: MediaFileDto,
         nullable: true,
     })

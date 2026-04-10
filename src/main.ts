@@ -3,9 +3,21 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { join } from 'path';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+
+    app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.GRPC,
+        options: {
+            package: 'fileprovider',
+            protoPath: join(__dirname, 'modules', 'file-provider', 'protos', 'file-provider.proto'),
+            url: '0.0.0.0:50051',
+        },
+    });
+    await app.startAllMicroservices();
 
     app.setGlobalPrefix('api');
 
@@ -31,7 +43,6 @@ async function bootstrap() {
 
     SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: '/docs-json' });
 
-    app.use('/uploads', express.static('/app/uploads'));
 
     await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

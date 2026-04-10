@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { PERMISSION_KEY, ROLE_KEY, USER_ID_KEY } from '../decorators';
 import { TokenService } from '../../modules/token/token.service';
 import { RoleService } from '../../modules/role/role.service';
 import { UserService } from '../../modules/user/user.service';
@@ -39,9 +38,6 @@ export class AccessGuard implements CanActivate {
         this.logger.debug('Access guard');
 
         const isPublic = this.reflector.get<boolean>(IS_PUBLIC_KEY, context.getHandler());
-        // Reflect.defineMetadata(ROLE_KEY, [], context.getHandler());
-        Reflect.defineMetadata(PERMISSION_KEY, [], context.getHandler());
-        Reflect.defineMetadata(USER_ID_KEY, null, context.getHandler());
 
         if (isPublic) return true;
         // if (request.url.includes('auth/signIn')) return true;
@@ -72,6 +68,7 @@ export class AccessGuard implements CanActivate {
                     uidNumber: user.uidNumber,
                     activeRole: activeRole.name,
                     politicGroups,
+                    permissions: activeRole.permissions.flatMap((p) => p.name),
                 };
                 request.user = requestUser;
 
@@ -79,16 +76,13 @@ export class AccessGuard implements CanActivate {
                     throw new UnauthorizedException('Невалидные данные токена');
                 }
 
-                // Reflect.defineMetadata(ROLE_KEY, activeRole.name, context.getHandler());
-                Reflect.defineMetadata(
-                    PERMISSION_KEY,
-                    activeRole.permissions.flatMap((p) => p.name),
-                    context.getHandler(),
-                );
-                Reflect.defineMetadata(USER_ID_KEY, user.id, context.getHandler());
-
                 return true;
-            } catch (_) {
+            } catch (error) {
+                this.logger.warn(
+                    `Access denied: ${
+                        error instanceof Error ? error.message : 'unknown error'
+                    }`,
+                );
                 throw new UnauthorizedException('Невалидные данные токена');
             }
         }

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package fileprovider;
+
+service FileProviderService {
+    rpc getFileUrl(GetFileUrlRequest) returns (GetFileUrlResponse);
+    rpc getAccessToFile(GetAccessToFileRequest) returns (GetAccessToFileResponse);
+}
+
+message GetFileUrlRequest {
+    string documentVersionId = 1;
+    int32 expiresIn = 2;
+}
+
+message GetFileUrlResponse{
+    string url = 1;
+    string fileName = 2;
+    string extention = 3;
+}
+
+message GetAccessToFileRequest{
+    string documentVersionId = 1;
+    string tabNumber = 2;
+}
+
+message GetAccessToFileResponse{
+    bool getAccessToFile = 1;
+}

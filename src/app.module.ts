@@ -10,11 +10,13 @@ import { EmployeesParserModule } from './infrastructure/employees-parser';
 import {
     AuthModule,
     DocumentVersionModule,
+    FileProviderModule,
     GlobalSearchModule,
     LikedNodeModule,
     NodeModule,
     PoliticModule,
     RoleModule,
+    SyncModule,
     TokenModule,
     UserModule,
 } from './modules';
@@ -33,6 +35,8 @@ import {
         PoliticModule,
         EmployeesParserModule,
         S3Module,
+        FileProviderModule,
+        SyncModule
     ],
     controllers: [AppController],
     providers: [AppService, { provide: APP_GUARD, useClass: AccessGuard }, { provide: APP_GUARD, useClass: ScopeGuard }],

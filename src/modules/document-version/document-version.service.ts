@@ -3,7 +3,6 @@ import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentConversionService } from '../bullmq/queues/document-conversion/document-conversion.service';
-import { FileStorageService } from '../file-storage/file-storage.service';
 import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
@@ -21,7 +20,6 @@ export class DocumentVersionService {
     private logger = new Logger(DocumentVersionService.name);
     constructor(
         private readonly prisma: PrismaService,
-        // private readonly fileStorageService: FileStorageService,
         private readonly documentConversionService: DocumentConversionService,
         private readonly esProducer: ElasticSearchProducer,
         private readonly s3Service:S3Service
@@ -71,7 +69,7 @@ export class DocumentVersionService {
     }
 
     async findOneById(id: string): Promise<DocumentVersionDto> {
-        const foundVersion = await this.prisma.documentVersion.findUnique({
+        const foundVersion = await this.prisma.documentVersion.findFirst({
             where: { id },
             include: { mediaFile: true },
         });
@@ -272,7 +270,6 @@ export class DocumentVersionService {
         });
         if (deletedDocument.mediaFile) {
             await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath)
-            // await this.fileStorageService.deleteFileFromDisk(deletedDocument.mediaFile.filePath);
         }
         await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
@@ -294,7 +291,6 @@ export class DocumentVersionService {
         for (const doc of deletedDocuments) {
             if (doc.mediaFile) {
                 await this.s3Service.deleteFile(doc.mediaFile.filePath)
-                // await this.fileStorageService.deleteFileFromDisk(doc.mediaFile.filePath);
             }
             try {
                 await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, doc.id);

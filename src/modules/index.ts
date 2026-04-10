@@ -7,3 +7,5 @@ export * from './politic';
 export * from './role';
 export * from './token';
 export * from './user';
+export * from './file-provider';
+export * from './sync';

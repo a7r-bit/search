@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { CreateGroupDTO } from './dto/create-group.dto';
 import { isUUID } from 'class-validator';
@@ -27,23 +27,8 @@ export class PoliticService {
         return group;
     }
 
-    async syncGroups() {
-        const extenalGroups = await this.employeesParserService.getDepartmentsList(1, 5000);
-        return await this.prisma.$transaction(async (tx) => {
-            for (const group of extenalGroups) {
-                await tx.group.upsert({
-                    where: { externalId: group.id },
-                    create: {
-                        externalId: group.id,
-                        name: group.name,
-                    },
-                    update: {
-                        name: group.name,
-                    },
-                });
-            }
-        });
-    }
+
+    
 
     async getPoliticsByTabNumber(tabNumber: string) {
         const groups = await this.prisma.group.findMany({

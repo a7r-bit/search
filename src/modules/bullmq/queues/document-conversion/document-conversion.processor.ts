@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GotenbergService } from '../../../gotenberg/gotenberg.service';
-import { FileStorageService } from '../../../file-storage/file-storage.service';
 import { PdfService } from '../../../pdf/pdf.service';
 import { SearchService } from '../../../search';
 import { instanceToPlain } from 'class-transformer';
@@ -18,7 +17,6 @@ export class DocumentConversionProcessor extends WorkerHost {
     constructor(
         private readonly prisma: PrismaService,
         private readonly gotenbergService: GotenbergService,
-        private readonly fileStorageService: FileStorageService,
         private readonly pdfService: PdfService,
         private readonly searchService: SearchService,
         private readonly s3Service: S3Service,

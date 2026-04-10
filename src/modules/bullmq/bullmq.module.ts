@@ -3,7 +3,6 @@ import { Logger, Module } from '@nestjs/common';
 import { DocumentConversionProcessor } from './queues/document-conversion/document-conversion.processor';
 import { DocumentConversionService } from './queues/document-conversion/document-conversion.service';
 import { GotenbergModule } from '../gotenberg';
-import { FileStorageModule } from '../file-storage';
 import { PdfModule } from '../pdf';
 import { SearchModule } from '../search';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -49,7 +48,6 @@ import { S3Module } from '../../infrastructure/s3';
         ),
         ConfigModule,
         GotenbergModule,
-        FileStorageModule,
         PdfModule,
         SearchModule,
         S3Module,

@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AppRole } from '../constants';
-import { PERMISSION_KEY, SCOPE_KEY } from '../decorators';
+import { SCOPE_KEY } from '../decorators';
 import { RequestUser } from '../types/request-user';
 /*
  *   Проверка доступа к контроллеру
@@ -21,14 +21,12 @@ export class ScopeGuard implements CanActivate {
 
         const requiredScope = this.reflector.get<string>(SCOPE_KEY, context.getHandler());
         if (!requiredScope) return true;
-
-        const permissions = this.reflector.get<string[]>(PERMISSION_KEY, context.getHandler());
+        const permissions = request.user?.permissions ?? [];
 
         if (request.user?.activeRole === AppRole.OWNER) {
             return true;
         }
 
-        if (!permissions) return false;
-        return permissions.includes(requiredScope) ?? false;
+        return permissions.includes(requiredScope);
     }
 }

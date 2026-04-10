@@ -3,4 +3,5 @@ export interface RequestUser {
     uidNumber: string;
     activeRole: string;
     politicGroups: string[];
+    permissions: string[];
 }

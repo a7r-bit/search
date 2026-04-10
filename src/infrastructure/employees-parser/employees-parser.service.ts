@@ -52,6 +52,7 @@ export class EmployeesParserService {
                 params: { page, limit, order_dir },
             });
             const departments = plainToInstance(DepartmentExternalDto, data.data as object[], { excludeExtraneousValues: true });
+            Logger.log("Departments length: ", departments.length);
             return await this.getDepartmentArrayFromHierarchy(departments);
         } catch (e) {
             this.logger.error(`Error fetching departments list: ${e.message}`);
@@ -60,7 +61,6 @@ export class EmployeesParserService {
     }
 
     async getUserByTabNumber(tabNumber: string): Promise<UserExternalDto> {
-        this.logger.log(`${this.baseUrl}/api/workers/by-tab-num/${tabNumber}`);
         try {
             const data = await this.client.get(`/api/workers/by-tab-num/${tabNumber}`, {});
             return plainToInstance(UserExternalDto, data.data, { excludeExtraneousValues: true });

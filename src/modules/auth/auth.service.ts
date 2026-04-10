@@ -26,11 +26,11 @@ export class AuthService {
         const politicGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
 
         const user = await this.prisma.user.upsert({
-            where: { uidNumber: userExternal['tab_num'] },
+            where: { uidNumber: userExternal.ldap_tab_num },
             create: {
-                firstName: userExternal['fname'],
-                middleName: userExternal['surname'],
-                uidNumber: userExternal['tab_num'],
+                firstName: userExternal.fname,
+                middleName: userExternal.surname,
+                uidNumber: userExternal.ldap_tab_num,
                 role: {
                     connect: {
                         name: 'User',
@@ -47,9 +47,9 @@ export class AuthService {
                 },
             },
             update: {
-                firstName: userExternal['fname'],
-                middleName: userExternal['surname'],
-                uidNumber: userExternal['tab_num'],
+                firstName: userExternal.fname,
+                middleName: userExternal.surname,
+                uidNumber: userExternal.ldap_tab_num,
                 politicsGroups: {
                     connectOrCreate: politicGroups.map((group) => ({
                         where: { externalId: group.id },

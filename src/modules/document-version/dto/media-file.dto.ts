@@ -4,7 +4,7 @@ import { MediaFile } from '@prisma/client';
 export class MediaFileDto {
     constructor(mediaFile: MediaFile) {
         this.id = mediaFile.id;
-        this.fileUrl = '/' + mediaFile.filePath.replace(/\\/g, '/');
+        this.fileUrl = mediaFile.filePath;
         this.fileName = mediaFile.fileName;
         this.extention = mediaFile.extention;
         this.documentVersionId = mediaFile.documentVersionId;
@@ -13,7 +13,7 @@ export class MediaFileDto {
     @ApiProperty({ description: 'ID файла', type: String })
     id: string;
 
-    @ApiProperty({ description: 'URL для доступа к файлу', type: String })
+    @ApiProperty({ description: 'S3 key/URL файла без дополнительной обработки', type: String })
     fileUrl: string;
 
     @ApiProperty({ description: 'Имя файла без расширения', type: String })
