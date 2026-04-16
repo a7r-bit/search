@@ -36,9 +36,10 @@ import {
         EmployeesParserModule,
         S3Module,
         FileProviderModule,
-        SyncModule
+        SyncModule,
+        TokenModule,
     ],
     controllers: [AppController],
     providers: [AppService, { provide: APP_GUARD, useClass: AccessGuard }, { provide: APP_GUARD, useClass: ScopeGuard }],
 })
-export class AppModule { }
+export class AppModule {}
