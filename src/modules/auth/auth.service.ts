@@ -130,6 +130,18 @@ export class AuthService {
             },
         };
     }
+    async getMe(req: any) {
+        const reqUser: RequestUser = req.user;
+        const user = await this.userService.findOne(reqUser.id, { includeRoles: true });
+        return {
+            id: user.id,
+            uidNumber: user.uidNumber,
+            firstName: user.firstName,
+            middleName: user.middleName,
+            activeRole: reqUser.activeRole,
+            roles: user.role.map((r) => r.name),
+        };
+    }
 
     async signOut(req: any) {
         const reqUser: RequestUser = req.user;

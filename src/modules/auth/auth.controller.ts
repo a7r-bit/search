@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Request, Body } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, Body, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
     ApiBadRequestResponse,
@@ -6,6 +6,7 @@ import {
     ApiBody,
     ApiCreatedResponse,
     ApiNotFoundResponse,
+    ApiOkResponse,
     ApiOperation,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ import { SignInUserResponse } from './dto/sign_in_user.dto';
 import { SignInDto } from './dto/sign_in.dto';
 import { LdapAuthGuard } from '../../common/guards/ldap-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
+import { UserDTO } from '../user';
 
 @Controller('auth')
 export class AuthController {
@@ -72,6 +74,16 @@ export class AuthController {
     })
     async switchRole(@Request() req, @Body('requireRole') requireRole: string) {
         return await this.authService.switchRole(req, requireRole);
+    }
+    @Get('me')
+    @ApiBearerAuth('access-token')
+    @ApiOperation({
+        summary: 'Получение информации о текущем пользователе',
+        description: 'Получение информации о текущем пользователе',
+    })
+    @ApiOkResponse({ type: UserDTO })
+    async getMe(@Request() req) {
+        return await this.authService.getMe(req);
     }
 
     @Post('signOut')
