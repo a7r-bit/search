@@ -5,21 +5,17 @@ import { UserMapper } from './mappers';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CustomParseUUIDPipe } from '../../common/pipes';
 import { Scope } from '../../common/decorators/scope.decorator';
-import { ApiPaginatedResponse } from '../../common/paginator/pagination.decorator';
 @Controller('users')
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
     @Get()
     @ApiOperation({ summary: 'Получение всех пользователей системы' })
-    @ApiPaginatedResponse(UserDTO, { description: 'Успешное получение' })
+    @ApiOkResponse({ type: UserDTO, isArray: true, description: 'Успешное получение' })
     @Scope('client:read')
     async findAll(@Query() query: FindUserQueryDto) {
         const users = await this.userService.findAll(query);
-        return {
-            ...users,
-            data: users.data.map((user) => UserMapper.toUserDTO(user as any)),
-        };
+        return users.map((user) => UserMapper.toUserDTO(user as any));
     }
 
     @Get(':id')

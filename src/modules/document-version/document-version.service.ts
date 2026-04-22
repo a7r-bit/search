@@ -10,10 +10,8 @@ import { Prisma } from '@prisma/client';
 import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
-import { PaginateResult, paginator } from '../../common/paginator/paginator';
 import { S3Service } from '../../infrastructure/s3/s3.service';
 
-const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class DocumentVersionService {
@@ -51,21 +49,20 @@ export class DocumentVersionService {
         return isUnique ? false : true;
     }
 
-    async findAll(filterDto?: DocumentVersionFilterDto): Promise<PaginateResult<DocumentVersionDto>> {
-        const { page = 1, perPage = 10 } = filterDto || {};
-        const documents = await paginate<any, Prisma.DocumentVersionFindManyArgs>(
-            this.prisma.documentVersion,
-            {
-                orderBy: { nodeId: 'desc' },
-                include: { mediaFile: true },
+    async findAll(filterDto?: DocumentVersionFilterDto): Promise<DocumentVersionDto[]> {
+        const { fileName, conversionStatus } = filterDto || {};
+        const documents = await this.prisma.documentVersion.findMany({
+            where: {
+                ...(conversionStatus && { conversionStatus }),
+                ...(fileName && {
+                    mediaFile: { fileName: { contains: fileName, mode: 'insensitive' } },
+                }),
             },
-            { page, perPage },
-        );
+            orderBy: { nodeId: 'desc' },
+            include: { mediaFile: true },
+        });
 
-        return {
-            ...documents,
-            data: documents.data.map((el) => new DocumentVersionDto(el)),
-        };
+        return documents.map((el) => new DocumentVersionDto(el));
     }
 
     async findOneById(id: string): Promise<DocumentVersionDto> {
@@ -85,8 +82,8 @@ export class DocumentVersionService {
         nodeId: string,
         filterDto?: DocumentVersionFilterDto,
         sort?: SortingParam,
-    ): Promise<PaginateResult<DocumentVersionDto>> {
-        const { fileName, conversionStatus, page = 1, perPage = 10 } = filterDto || {};
+    ): Promise<DocumentVersionDto[]> {
+        const { fileName, conversionStatus } = filterDto || {};
 
         const where: Prisma.DocumentVersionWhereInput = {
             nodeId,
@@ -110,20 +107,13 @@ export class DocumentVersionService {
             orderBy.push({ version: 'asc' });
         }
 
-        const documents = await paginate<any, Prisma.DocumentVersionFindManyArgs>(
-            this.prisma.documentVersion,
-            {
-                where: where,
-                orderBy: orderBy,
-                include: { mediaFile: true },
-            },
-            { page, perPage },
-        );
+        const documents = await this.prisma.documentVersion.findMany({
+            where: where,
+            orderBy: orderBy,
+            include: { mediaFile: true },
+        });
 
-        return {
-            ...documents,
-            data: documents.data.map((el) => new DocumentVersionDto(el)),
-        };
+        return documents.map((el) => new DocumentVersionDto(el));
     }
 
     async create(createDocumentVersionDto: CreateDocumentVersionDto, file: Express.Multer.File): Promise<DocumentVersionDto> {

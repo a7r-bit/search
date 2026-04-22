@@ -34,7 +34,6 @@ import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { ApiSortingQuery } from '../../common/decorators/sorting-params-swagger.decorator';
 import { CustomFileTypeValidator, CustomParseUUIDPipe } from '../../common/pipes';
 import { SortingParam, SortingParams } from '../../common/decorators/sorting-params.decorator';
-import { ApiPaginatedResponse } from '../../common/paginator/pagination.decorator';
 @ApiBearerAuth('access-token')
 @Controller('document-versions')
 export class DocumentVersionController {
@@ -44,7 +43,6 @@ export class DocumentVersionController {
     @ApiOperation({
         summary: 'Получение всех версий документов',
     })
-    @ApiPaginatedResponse(DocumentVersionDto)
     async findAll(@Query() filterDto: DocumentVersionFilterDto) {
         return await this.documentVersionService.findAll(filterDto);
     }
@@ -61,7 +59,6 @@ export class DocumentVersionController {
         required: true,
         description: 'UUID документа',
     })
-    @ApiPaginatedResponse(DocumentVersionDto, { description: 'Список версий документа' })
     async findByNodeId(
         @Param('id', new CustomParseUUIDPipe()) documentId: string,
         @Query() filterDto: DocumentVersionFilterDto,

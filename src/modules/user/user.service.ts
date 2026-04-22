@@ -4,9 +4,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserWithRoles, UserWithRolesAndPermissions } from './types';
 import { Prisma, User } from '@prisma/client';
-import { PaginateResult, paginator } from '../../common/paginator/paginator';
-
-const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class UserService {
@@ -15,11 +12,7 @@ export class UserService {
     async findAll(options?: {
         includeRoles?: boolean;
         includePermissions?: boolean;
-        page?: number;
-        perPage?: number;
-    }): Promise<PaginateResult<User | UserWithRoles | UserWithRolesAndPermissions>> {
-        const page = options?.page ?? 1;
-        const perPage = options?.perPage ?? 10;
+    }): Promise<(User | UserWithRoles | UserWithRolesAndPermissions)[]> {
         const include: Prisma.UserInclude = {};
 
         if (options?.includeRoles) {
@@ -28,7 +21,9 @@ export class UserService {
             };
         }
 
-        return await paginate(this.prisma.user, { include: Object.keys(include).length > 0 ? include : undefined }, { page, perPage });
+        return await this.prisma.user.findMany({
+            include: Object.keys(include).length > 0 ? include : undefined,
+        });
     }
 
     async findOne(id: string): Promise<User>;

@@ -13,8 +13,6 @@ import { CustomParseUUIDPipe } from '../../common/pipes';
 import { CheckGroupPolitic } from '../../common/guards/group-politic.guard';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
-import { ApiPaginatedResponse } from '../../common/paginator/pagination.decorator';
-import { PaginateResult } from '../../common/paginator/paginator';
 
 @Controller('node')
 @ApiBearerAuth('access-token')
@@ -43,14 +41,14 @@ export class NodeController {
       Если пользователь является Owner-ом, то он получает все дочерние элементы с правами доступа. 
       Если пользователь не является Owner-ом, то он получает только те дочерние элементы, к которым имеет доступ, с их правами доступа.`,
     })
-    @ApiPaginatedResponse(NodeWithPermissionsDto)
+    @ApiOkResponse({ type: NodeWithPermissionsDto, isArray: true })
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
     @UseGuards(CheckGroupPolitic)
     async findChildren(
         @Query() query: ListNodesQueryDto,
         @Req() req,
         @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam,
-    ): Promise<PaginateResult<NodeWithPermissionsDto>> {
+    ): Promise<NodeWithPermissionsDto[]> {
         return await this.nodeService.listChildren(query, req.user as RequestUser, sort);
     }
 

@@ -9,16 +9,13 @@ import { ElasticTypes } from '../../common/constants';
 import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { PathPart } from '../../common/types/path-part.dto';
-import { Node, NodePermissionType, NodeType, Prisma, User } from '@prisma/client';
+import { NodePermissionType, NodeType } from '@prisma/client';
 import { ListNodesQueryDto, toNodeWithPermissionsDto } from './dto';
 import { PoliticService } from '../politic/politic.service';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
 import { NodeIndexProps } from '../../common/elasic-search-models';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
-import { PaginateResult, paginator } from '../../common/paginator/paginator';
-
-const paginate = paginator({ perPage: 10 });
 
 @Injectable()
 export class NodeService {
@@ -92,24 +89,20 @@ export class NodeService {
         return parts;
     }
 
-    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<PaginateResult<NodeWithPermissionsDto>> {
-        const { parentId, type, page = 1, perPage = 10 } = query;
+    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<NodeWithPermissionsDto[]> {
+        const { parentId, type } = query;
         const isOwner = userReq.activeRole === 'Owner';
 
-        const paginatedNodes = await paginate<Node, Prisma.NodeFindManyArgs>(
-            this.prisma.node,
-            {
-                where: {
-                    parentId: parentId ? parentId : null,
-                    ...(type && { type }),
-                },
-                orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
+        const nodes = await this.prisma.node.findMany({
+            where: {
+                parentId: parentId ? parentId : null,
+                ...(type && { type }),
             },
-            { page, perPage },
-        );
+            orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
+        });
 
         const result: NodeWithPermissionsDto[] = [];
-        for (const node of paginatedNodes.data) {
+        for (const node of nodes) {
             let permissions: NodePermissionType[];
 
             if (isOwner) {
@@ -120,10 +113,7 @@ export class NodeService {
             result.push(toNodeWithPermissionsDto(toNodeDto(node), permissions));
         }
 
-        return {
-            ...paginatedNodes,
-            data: result,
-        };
+        return result;
     }
 
     async update(id: string, dto: UpdateNodeDto): Promise<NodeDto> {
