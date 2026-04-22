@@ -130,4 +130,10 @@ export class AuthService {
             },
         };
     }
+
+    async signOut(req: any) {
+        const reqUser: RequestUser = req.user;
+        await this.tokenService.remoteRefreshToken(reqUser.id);
+        return { message: 'Выход из системы успешно выполнен' };
+    }
 }

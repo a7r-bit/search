@@ -94,9 +94,8 @@ export class TokenService {
         return { access_token: newAccess, refresh_token: newRefresh };
     }
 
-    async remoteRefreshToken(access_token: string): Promise<boolean> {
-        const userData: PayloadDTO = await this.verifyAccessToken(access_token);
-        await this.prisma.refreshToken.delete({ where: { userId: userData.id } });
+    async remoteRefreshToken(userId: string): Promise<boolean> {
+        await this.prisma.refreshToken.deleteMany({ where: { userId: userId } });
         return true;
     }
 }

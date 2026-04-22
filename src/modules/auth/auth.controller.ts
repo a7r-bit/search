@@ -73,4 +73,14 @@ export class AuthController {
     async switchRole(@Request() req, @Body('requireRole') requireRole: string) {
         return await this.authService.switchRole(req, requireRole);
     }
+
+    @Post('signOut')
+    @ApiBearerAuth('access-token')
+    @ApiOperation({
+        summary: 'Выход пользователя из системы',
+        description: 'Выход пользователя из системы',
+    })
+    async signOut(@Request() req) {
+        return await this.authService.signOut(req);
+    }
 }
