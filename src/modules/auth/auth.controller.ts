@@ -15,6 +15,7 @@ import { SignInDto } from './dto/sign_in.dto';
 import { LdapAuthGuard } from '../../common/guards/ldap-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserDTO } from '../user';
+import { SwitchRoleDto } from './dto/switch-role.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -62,6 +63,7 @@ export class AuthController {
             },
         },
     })
+    @ApiBody({ required: true, type: SwitchRoleDto })
     @ApiNotFoundResponse({
         description: 'Роль с указанным названием не найдена',
         schema: {
@@ -72,8 +74,8 @@ export class AuthController {
             },
         },
     })
-    async switchRole(@Request() req, @Body('requireRole') requireRole: string) {
-        return await this.authService.switchRole(req, requireRole);
+    async switchRole(@Request() req, @Body() body: SwitchRoleDto) {
+        return await this.authService.switchRole(req, body.requireRole);
     }
     @Get('me')
     @ApiBearerAuth('access-token')
