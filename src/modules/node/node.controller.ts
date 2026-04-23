@@ -13,6 +13,7 @@ import { CustomParseUUIDPipe } from '../../common/pipes';
 import { CheckGroupPolitic } from '../../common/guards/group-politic.guard';
 import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
+import { TreeItemDto } from './dto/tree-item.dto';
 
 @Controller('node')
 @ApiBearerAuth('access-token')
@@ -21,13 +22,13 @@ export class NodeController {
 
     @Post()
     @ApiOperation({
-        summary: 'Создание Node (type: Directory)',
-        description: 'Создание новой директории.',
+        summary: 'Создать узел',
+        description: 'Создает новый узел (директорию или файл) с указанными параметрами.',
     })
     @ApiBody({
         type: CreateNodeDto,
         required: true,
-        description: 'Данные для создания директории',
+        description: 'Данные для создания узла',
     })
     @ApiCreatedResponse({ type: NodeDto })
     async create(@Body() dto: CreateNodeDto): Promise<NodeDto> {
@@ -36,28 +37,29 @@ export class NodeController {
 
     @Get('children')
     @ApiOperation({
-        summary: 'Получение дочерних элементов c правами доступа с ним',
-        description: `Получение дочерних элементов директори с permissions для текущего пользователя.
-      Если пользователь является Owner-ом, то он получает все дочерние элементы с правами доступа. 
-      Если пользователь не является Owner-ом, то он получает только те дочерние элементы, к которым имеет доступ, с их правами доступа.`,
+        summary: 'Получить дочерние элементы',
+        description: `Возвращает дочерние элементы директории с правами доступа для текущего пользователя.
+Если пользователь является owner, возвращаются все дочерние элементы.
+Если пользователь не является owner, возвращаются только доступные ему элементы.`,
     })
-    @ApiOkResponse({ type: NodeWithPermissionsDto, isArray: true })
+    @ApiOkResponse({ description: 'Список дочерних элементов дерева', type: TreeItemDto, isArray: true })
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
     @UseGuards(CheckGroupPolitic)
     async findChildren(
         @Query() query: ListNodesQueryDto,
         @Req() req,
         @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam,
-    ): Promise<NodeWithPermissionsDto[]> {
+    ): Promise<TreeItemDto[]> {
         return await this.nodeService.listChildren(query, req.user as RequestUser, sort);
     }
 
+
     @Get(':id')
     @ApiOperation({
-        summary: 'Поиск Node по id',
-        description: 'Поиск Node по id.',
+        summary: 'Получить узел по ID',
+        description: 'Возвращает узел по идентификатору.',
     })
-    @ApiParam({ name: 'id' })
+    @ApiParam({ name: 'id', description: 'ID узла', format: 'uuid' })
     @ApiOkResponse({ type: NodeDto })
     async findById(@Param('id', new CustomParseUUIDPipe()) id: string): Promise<NodeDto> {
         return await this.nodeService.findById(id);
@@ -65,10 +67,13 @@ export class NodeController {
 
     @Patch(':id')
     @ApiOperation({
-        summary: 'Обновление Node',
+        summary: 'Обновить узел',
+        description: 'Обновляет поля узла по идентификатору.',
     })
+    @ApiParam({ name: 'id', description: 'ID узла', format: 'uuid' })
     @ApiBody({
         type: UpdateNodeDto,
+        description: 'Поля для обновления узла',
     })
     @ApiOkResponse({ type: NodeDto })
     async update(@Param('id') id: string, @Body() dto: UpdateNodeDto): Promise<NodeDto> {
@@ -77,8 +82,13 @@ export class NodeController {
 
     @Put(':id/move')
     @ApiOperation({
-        summary: 'Поремещение Node',
-        description: 'Установление parentId по переданному id',
+        summary: 'Переместить узел',
+        description: 'Перемещает узел в другую директорию, задавая новый parentId.',
+    })
+    @ApiParam({ name: 'id', description: 'ID перемещаемого узла', format: 'uuid' })
+    @ApiBody({
+        type: MoveNodeDto,
+        description: 'Новый родительский узел',
     })
     @ApiOkResponse({ type: NodeDto })
     async move(@Param('id') id: string, @Body() dto: MoveNodeDto): Promise<NodeDto> {
@@ -87,30 +97,25 @@ export class NodeController {
 
     @Get(':id/path')
     @ApiOperation({
-        summary: 'Получение пути к текущей директории',
-        description: 'Получение пути к текущей директории по переданному id.',
+        summary: 'Получить путь к узлу',
+        description: 'Возвращает путь от корня до указанного узла.',
     })
+    @ApiParam({ name: 'id', description: 'ID узла', format: 'uuid' })
     @ApiOkResponse({ type: PathPart, isArray: true })
     async getPath(@Param('id') id: string): Promise<PathPart[]> {
         return await this.nodeService.getPath(id);
     }
 
-    @Get('path/root')
-    @ApiOperation({
-        summary: 'Получение пути к ролительским директориям',
-    })
-    @ApiOkResponse({ type: PathPart, isArray: true })
-    async getRootPath(): Promise<PathPart[]> {
-        return await this.nodeService.getRootPath();
-    }
 
     @Delete(':id')
     @ApiOperation({
-        summary: 'Удаление node',
-        description: 'Удаляет node по id вместе со всеми дочерними node-ами и связанными сущностями.',
+        summary: 'Удалить узел',
+        description: 'Удаляет узел вместе со всеми дочерними узлами и связанными сущностями.',
     })
+    @ApiParam({ name: 'id', description: 'ID удаляемого узла', format: 'uuid' })
     @ApiOkResponse({ type: NodeDto })
     async remove(@Param('id', new CustomParseUUIDPipe()) id: string): Promise<NodeDto> {
         return await this.nodeService.delete(id);
     }
+
 }

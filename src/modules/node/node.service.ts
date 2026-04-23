@@ -16,6 +16,7 @@ import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
 import { NodeIndexProps } from '../../common/elasic-search-models';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
+import { TreeItemDto } from './dto/tree-item.dto';
 
 @Injectable()
 export class NodeService {
@@ -25,8 +26,6 @@ export class NodeService {
         private readonly politicService: PoliticService,
         private readonly esProducer: ElasticSearchProducer,
     ) {}
-
-   
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);
@@ -83,14 +82,10 @@ export class NodeService {
         return parts;
     }
 
-    async getRootPath(): Promise<PathPart[]> {
-        const parts: PathPart[] = [];
-        parts.unshift({ id: null, name: '...' });
-        return parts;
-    }
 
-    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<NodeWithPermissionsDto[]> {
+    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<TreeItemDto[]> {
         const { parentId, type } = query;
+
         const isOwner = userReq.activeRole === 'Owner';
 
         const nodes = await this.prisma.node.findMany({
@@ -98,19 +93,44 @@ export class NodeService {
                 parentId: parentId ? parentId : null,
                 ...(type && { type }),
             },
+            include: {
+                _count: { select: { children: true } },
+                documentVersions: {
+                    take: 1,
+                    orderBy: { version: 'desc' },
+                    include: { mediaFile: true },
+                },
+            },
             orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
         });
 
-        const result: NodeWithPermissionsDto[] = [];
+        const result: TreeItemDto[] = [];
         for (const node of nodes) {
-            let permissions: NodePermissionType[];
+            const permissions = isOwner
+                ? Object.values(NodePermissionType)
+                : await this.politicService.resolveNodePermissions(userReq.politicGroups, node.id);
 
-            if (isOwner) {
-                permissions = Object.values(NodePermissionType);
-            } else {
-                permissions = await this.politicService.resolveNodePermissions(userReq.politicGroups, node.id);
-            }
-            result.push(toNodeWithPermissionsDto(toNodeDto(node), permissions));
+            const latest = node.documentVersions[0] ?? null;
+            const isDirectory = node.type === NodeType.DIRECTORY;
+
+            
+            result.push(
+                {
+                    id:node.id,
+                    parentId:node.parentId??null,
+                    kind:isDirectory?"directory":"file",
+                    name: latest?.mediaFile?.fileName??node.name,
+                    hasChildren:isDirectory? node._count.children>0:false,
+                    permissions,
+                    document:latest?{
+                        latestVersionId:latest.id,
+                        version:latest.version,
+                        fileName:latest.mediaFile?.fileName,
+                        conversionStatus:latest.conversionStatus,
+                        updatedAt:latest.updatedAt,
+                    }:null,
+                }
+            );
         }
 
         return result;

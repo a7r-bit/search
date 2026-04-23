@@ -101,22 +101,42 @@ export class PoliticService {
         return this.checkUserToNodeAccess(userPolicies, node.parentId);
     }
 
-    async resolveNodePermissions(userGroups: string[], nodeId: string | null): Promise<NodePermissionType[]> {
-        if (nodeId === null) return [];
-
+    async resolveNodePermissions(
+        userGroups: string[],
+        nodeId: string | null,
+        visited = new Set<string>(),
+    ): Promise<NodePermissionType[]> {
+        if (!nodeId) return [NodePermissionType.READ];
+    
+        if (visited.has(nodeId)) {
+            return [NodePermissionType.READ];
+        }
+        visited.add(nodeId);
+    
         const node = await this.prisma.node.findUnique({
             where: { id: nodeId },
-            include: { accesses: true },
+            select: {
+                parentId: true,
+                accesses: {
+                    select: {
+                        groupId: true,
+                        permissions: true,
+                    },
+                },
+            },
         });
-        if (!node) return [];
+    
+        if (!node) return [NodePermissionType.READ];
+    
         if (node.accesses.length > 0) {
-            const matching = node.accesses.filter((assec) => userGroups.includes(assec.groupId));
-            if (matching.length === 0) return [];
-            const res = matching.flatMap((m) => m.permissions);
-            // Logger.log(PoliticService.name, res)
-            return res;
+            const permissions = node.accesses
+                .filter((access) => userGroups.includes(access.groupId))
+                .flatMap((access) => access.permissions);
+    
+            return [...new Set(permissions)];
         }
-        return this.resolveNodePermissions(userGroups, node.parentId);
+    
+        return this.resolveNodePermissions(userGroups, node.parentId, visited);
     }
 
     async createGroup(createDTO: CreateGroupDTO) {

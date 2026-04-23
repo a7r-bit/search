@@ -23,7 +23,7 @@ export class AuthService {
         const reqUser: RequestUser = req.user;
 
         const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
-        const politicGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
+        const externalPoliticGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
 
         const user = await this.prisma.user.upsert({
             where: { uidNumber: userExternal.ldap_tab_num },
@@ -37,7 +37,7 @@ export class AuthService {
                     },
                 },
                 politicsGroups: {
-                    connectOrCreate: politicGroups.map((group) => ({
+                    connectOrCreate: externalPoliticGroups.map((group) => ({
                         where: { externalId: group.id },
                         create: {
                             name: group.name,
@@ -51,7 +51,7 @@ export class AuthService {
                 middleName: userExternal.surname,
                 uidNumber: userExternal.ldap_tab_num,
                 politicsGroups: {
-                    connectOrCreate: politicGroups.map((group) => ({
+                    connectOrCreate: externalPoliticGroups.map((group) => ({
                         where: { externalId: group.id },
                         create: {
                             name: group.name,
@@ -65,12 +65,15 @@ export class AuthService {
             },
         });
 
+        // Получение групп пользователя для доступа к Node и NodeAccess
+        const politicGroups = await this.groupService.getPoliticsByTabNumber(user.uidNumber);
+
         const payload: PayloadDTO = {
             id: user.id,
             activeRole: user.role[0].name,
             politicGroups: politicGroups.map((g) => g.id),
         };
-        this.logger.warn(`Вход в программу userId: ${payload.id}`);
+        this.logger.warn(`Вход в программу userId: ${payload.id} politicGroups: ${politicGroups.length}`);
 
         const tokens = await this.tokenService.generateTokens(payload);
 

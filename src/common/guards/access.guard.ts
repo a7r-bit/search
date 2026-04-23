@@ -35,7 +35,6 @@ export class AccessGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-        this.logger.debug('Access guard');
 
         const isPublic = this.reflector.get<boolean>(IS_PUBLIC_KEY, context.getHandler());
 
