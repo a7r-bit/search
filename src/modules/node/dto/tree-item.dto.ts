@@ -11,6 +11,9 @@ export class TreeDocumentDto {
     @ApiProperty({ description: 'Имя файла' })
     fileName: string;
 
+    @ApiProperty({ description: 'URL файла' })
+    fileUrl: string;
+
     @ApiProperty({ description: 'Статус конвертации', enum: ConversionStatus })
     conversionStatus: ConversionStatus;
 

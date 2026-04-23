@@ -126,6 +126,7 @@ export class NodeService {
                         latestVersionId:latest.id,
                         version:latest.version,
                         fileName:latest.mediaFile?.fileName,
+                        fileUrl:latest.mediaFile?.filePath,
                         conversionStatus:latest.conversionStatus,
                         updatedAt:latest.updatedAt,
                     }:null,
