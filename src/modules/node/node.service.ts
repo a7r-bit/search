@@ -29,7 +29,7 @@ export class NodeService {
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
         await this.validateParent(dto.parentId ?? null);
-        await this.isUnique(dto);
+        await this.isUnique(dto.name, dto.type, dto.parentId ?? null);
         const created = await this.prisma.node.create({
             data: {
                 name: dto.name,
@@ -141,9 +141,11 @@ export class NodeService {
         const node = await this.prisma.node.findUnique({
             where: { id },
         });
-
+        if(dto.name){
+            await this.isUnique(dto.name, node.type, node.parentId);
+        }
         if (!node) throw new NotFoundException('Директория не найдена');
-
+        
         const updated = await this.prisma.node.update({
             where: { id },
             data: {
@@ -244,18 +246,19 @@ export class NodeService {
      *  helpers
      */
 
-    private async isUnique(dto: CreateNodeDto) {
+    // private async isUnique(dto: CreateNodeDto) {
+    private async isUnique(name: string, type: NodeType, parentId: string | null) {
         const existing = await this.prisma.node.findFirst({
             where: {
-                name: dto.name,
-                type: dto.type,
-                parentId: dto.parentId ? dto.parentId : { equals: null },
+                name: name,
+                type: type,
+                parentId: parentId ? parentId : { equals: null },
             },
             select: { id: true },
         });
 
         if (existing) {
-            throw new BadRequestException(`В текущей дикеткории уже существоет элемент с название: ${dto.name}`);
+            throw new BadRequestException(`В текущей дикеткории уже существоет элемент с название: ${name}`);
         }
     }
 
