@@ -31,6 +31,7 @@ services:
         ports:
             - '3000:3000'
             - '5555:5555'
+            - '50051:50051'
 
         depends_on:
             postgres:
