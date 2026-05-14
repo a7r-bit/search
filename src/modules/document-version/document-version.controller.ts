@@ -93,7 +93,7 @@ export class DocumentVersionController {
     @ApiOperation({
         summary: 'Создание новой версии документа',
         description: `Создание новой версии документа, передавая nodeId и файл.
-  Поддерживаемые типы файлов: .doc, .docx, .pdf. Максимальный размер — 5MB.`,
+  Поддерживаемые типы файлов: .doc, .docx, .pdf. Максимальный размер — 30МБ.`,
     })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
@@ -101,6 +101,19 @@ export class DocumentVersionController {
         schema: {
             type: 'object',
             required: ['nodeId', 'file'],
+            properties: {
+                nodeId: {
+                    type: 'string',
+                    format: 'uuid',
+                    description: 'UUID документа (node), к которому добавляется новая версия',
+                    example: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+                },
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Файл версии документа (.doc, .docx, .pdf)',
+                },
+            },
         },
     })
     @ApiCreatedResponse({
@@ -108,8 +121,8 @@ export class DocumentVersionController {
         type: DocumentVersionDto,
     })
     @ApiResponse({
-        status: 404,
-        description: 'Запись о документе не найденаы',
+        status: 400,
+        description: 'Неподдерживаемый формат файла или превышение размера',
         example: {
             message: 'Формат файла "application/zip" не поддерживается. Разрешены: PDF, DOC, DOCX.',
             error: 'Bad Request',
@@ -117,10 +130,10 @@ export class DocumentVersionController {
         },
     })
     @ApiResponse({
-        status: 400,
-        description: 'Неподдерживаемый формат файла или превышение размера',
+        status: 404,
+        description: 'Запись о документе не найдена',
         example: {
-            message: 'Запись не найдена',
+            message: 'Родительский докумет не найден',
             error: 'Not Found',
             statusCode: 404,
         },
