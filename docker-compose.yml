@@ -6,7 +6,7 @@ services:
         pull_policy: always
 
         env_file:
-            - $ENV_FILE_PATH
+            - $ENV_FILE
 
 
         command: sh ./docker/init-prisma.sh
@@ -46,7 +46,7 @@ services:
         restart: unless-stopped
         container_name: postgres
         env_file:
-            - $ENV_FILE_PATH
+            - $ENV_FILE
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
@@ -67,7 +67,7 @@ services:
         restart: unless-stopped
         container_name: redis-art
         env_file:
-            - $ENV_FILE_PATH
+            - $ENV_FILE
 
         healthcheck:
             test: ['CMD', 'redis-cli', 'ping']
@@ -80,7 +80,7 @@ services:
         restart: unless-stopped
         container_name: elasticsearch
         env_file:
-            - $ENV_FILE_PATH
+            - $ENV_FILE
        
 
         environment:
@@ -103,7 +103,7 @@ services:
         restart: unless-stopped
         container_name: gotenberg
         env_file:
-            - $ENV_FILE_PATH
+            - $ENV_FILE
 
 volumes:
     pgdata:
