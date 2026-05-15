@@ -29,7 +29,7 @@ deploy-job:
   tags:
     - search
   script:
-    - docker compose --env-file $ENV_FILE_PATH config -q
+    - docker compose config -q
     - docker compose --env-file $ENV_FILE_PATH up -d
     - docker system prune -a -f
   environment:
