@@ -29,8 +29,8 @@ deploy-job:
   tags:
     - search
   script:
-    - docker compose config -q
-    - docker compose up -d
+    - docker compose --env-file "$ENV_FILE" config -q
+    - docker compose --env-file "$ENV_FILE" up -d
     - docker system prune -a -f
   environment:
-    name: prod
+    name: $ENV_NAME
