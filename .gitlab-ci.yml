@@ -29,9 +29,8 @@ deploy-job:
   tags:
     - search
   script:
-    - docker compose config -q
-    - docker compose up -d db redis caddy
-    - python3 scripts/zero_downtime_rollout.py || true
+    - docker compose --env-file $ENV_FILE_PATH config -q
+    - docker compose --env-file $ENV_FILE_PATH up -d
     - docker system prune -a -f
   environment:
     name: prod

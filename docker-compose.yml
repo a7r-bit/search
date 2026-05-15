@@ -5,8 +5,6 @@ services:
         container_name: nest_app
         pull_policy: always
 
-        env_file:
-            - .env
 
         command: sh ./docker/init-prisma.sh
 
@@ -75,8 +73,7 @@ services:
         image: dockerhub.mingas.by/elasticsearch:elastic-pluggin
         restart: unless-stopped
         container_name: elasticsearch
-        env_file:
-            - .env
+       
 
         environment:
             - node.name=${ELASTIC_NODE_NAME}
