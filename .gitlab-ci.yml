@@ -1,0 +1,37 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  SHORT_NAME: search
+  CI_REGISTRY_IMAGE: dockerhub.mingas.by/${SHORT_NAME}
+
+build-job:
+  stage: build
+  only:
+    - main
+  tags:
+    - search
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:latest || true
+    - docker build -f ./docker/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+    - docker system prune -a -f
+
+deploy-job:
+  stage: deploy
+  needs:
+    - build-job
+  only:
+    - main
+  tags:
+    - search
+  script:
+    - docker compose config -q
+    - docker compose up -d db redis caddy
+    - python3 scripts/zero_downtime_rollout.py || true
+    - docker system prune -a -f
+  environment:
+    name: prod
