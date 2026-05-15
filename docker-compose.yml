@@ -5,6 +5,9 @@ services:
         container_name: nest_app
         pull_policy: always
 
+        env_file:
+            - $ENV_FILE_PATH
+
 
         command: sh ./docker/init-prisma.sh
 
@@ -42,7 +45,8 @@ services:
         image: dockerhub.mingas.by/postgres:15.2
         restart: unless-stopped
         container_name: postgres
-
+        env_file:
+            - $ENV_FILE_PATH
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
@@ -62,6 +66,8 @@ services:
         image: dockerhub.mingas.by/redis:7.0.5-alpine
         restart: unless-stopped
         container_name: redis-art
+        env_file:
+            - $ENV_FILE_PATH
 
         healthcheck:
             test: ['CMD', 'redis-cli', 'ping']
@@ -73,6 +79,8 @@ services:
         image: dockerhub.mingas.by/elasticsearch:elastic-pluggin
         restart: unless-stopped
         container_name: elasticsearch
+        env_file:
+            - $ENV_FILE_PATH
        
 
         environment:
@@ -94,6 +102,8 @@ services:
         image: dockerhub.mingas.by/gotenberg:8
         restart: unless-stopped
         container_name: gotenberg
+        env_file:
+            - $ENV_FILE_PATH
 
 volumes:
     pgdata:

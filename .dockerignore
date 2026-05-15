@@ -1,3 +1,7 @@
+README.md
+docker-compose.yml
+./docker/Dockerfile
+.gitlab-ci.yml
 node_modules
 .git
 dist
