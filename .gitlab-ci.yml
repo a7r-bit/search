@@ -33,4 +33,4 @@ deploy-job:
     - docker compose --env-file "$ENV_FILE" up -d
     - docker system prune -a -f
   environment:
-    name: $ENV_NAME
+    name: prod
