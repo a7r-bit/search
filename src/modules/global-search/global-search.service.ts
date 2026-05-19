@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { normalizeElasticHit, SearchResultDTO } from './dto/search-result.dto';
 import { SearchService } from '../search';
-import { SearchFileDto } from '../document-version';
+import { SearchFileDto } from './dto/search-file.dto';
 
 @Injectable()
 export class GlobalSearchService {

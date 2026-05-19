@@ -1,5 +1,69 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ElasticTypes } from '../../../common/constants';
 import { NodeType } from '@prisma/client';
+
+export class SearchHighlightDto {
+    @ApiPropertyOptional({ type: [String] })
+    name?: string[];
+
+    @ApiPropertyOptional({ type: [String] })
+    description?: string[];
+
+    @ApiPropertyOptional({ type: [String] })
+    fileName?: string[];
+
+    @ApiPropertyOptional({ type: [String] })
+    content?: string[];
+}
+
+export class NodeSearchResultDto {
+    @ApiProperty({ format: 'uuid' })
+    id: string;
+
+    @ApiProperty({ enum: ElasticTypes, example: ElasticTypes.Node })
+    index: ElasticTypes;
+
+    @ApiProperty()
+    score: number;
+
+    @ApiPropertyOptional({ type: SearchHighlightDto })
+    highlight?: SearchHighlightDto;
+
+    @ApiProperty({ enum: NodeType })
+    type: NodeType;
+
+    @ApiProperty()
+    name: string;
+
+    @ApiPropertyOptional()
+    description?: string;
+}
+
+export class DocumentVersionSearchResultDto {
+    @ApiProperty({ format: 'uuid' })
+    id: string;
+
+    @ApiProperty({ enum: ElasticTypes, example: ElasticTypes.DocumentVersion })
+    index: ElasticTypes;
+
+    @ApiProperty()
+    score: number;
+
+    @ApiPropertyOptional({ type: SearchHighlightDto })
+    highlight?: SearchHighlightDto;
+
+    @ApiProperty()
+    version: number;
+
+    @ApiProperty()
+    fileName: string;
+
+    @ApiProperty()
+    fileUrl: string;
+
+    @ApiProperty({ type: String, format: 'date-time' })
+    createdAt: Date;
+}
 
 export interface BaseSearchResultDTO {
     id: string;
