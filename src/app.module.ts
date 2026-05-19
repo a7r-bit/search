@@ -20,6 +20,8 @@ import {
     TokenModule,
     UserModule,
 } from './modules';
+import { adminJsImport } from './modules/admin/admin-js.import';
+
 
 @Module({
     imports: [
@@ -38,6 +40,7 @@ import {
         FileProviderModule,
         SyncModule,
         TokenModule,
+        adminJsImport
     ],
     controllers: [AppController],
     providers: [AppService, { provide: APP_GUARD, useClass: AccessGuard }, { provide: APP_GUARD, useClass: ScopeGuard }],
