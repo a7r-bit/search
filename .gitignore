@@ -22,6 +22,7 @@ uploads/*
 /coverage
 /.nyc_output
 /
+search.txt
 
 # IDEs and editors
 /.idea

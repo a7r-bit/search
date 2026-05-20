@@ -13,7 +13,7 @@ services:
         command: sh ./docker/init-prisma.sh
 
         environment:
-            NODE_ENV: development
+            NODE_ENV: production
             HOST: 0.0.0.0
             PORT: ${PORT}
             DATABASE_URL: ${DATABASE_URL}
@@ -26,8 +26,6 @@ services:
             LDAP_ADMIN_DN: ${LDAP_ADMIN_DN}
             LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
 
-        volumes:
-            - ./uploads:/app/uploads
         depends_on:
             postgres:
                 condition: service_healthy
@@ -114,7 +112,6 @@ services:
 
 volumes:
     pgdata:
-    node_modules:
     esdata:
 
 networks:

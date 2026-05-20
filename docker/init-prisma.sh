@@ -17,4 +17,4 @@ npx prisma db seed
 echo "Done!"
 
 echo "Starting NestJS..."
-exec npm run start:prod
+exec node dist/main.js
