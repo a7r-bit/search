@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import {
     ApiBearerAuth,
     ApiBody,
@@ -15,6 +15,7 @@ import {
     NodeSearchResultDto,
     SearchResultDTO,
 } from './dto/search-result.dto';
+import { RequestUser } from '../../common/types/request-user';
 
 @ApiTags('global-search')
 @ApiBearerAuth('access-token')
@@ -42,7 +43,7 @@ export class GlobalSearchController {
             },
         },
     })
-    async globalSearch(@Body() query: SearchFileDto): Promise<SearchResultDTO[]> {
-        return this.globalSearchService.globalSearch(query);
+    async globalSearch(@Body() query: SearchFileDto, @Req() req): Promise<SearchResultDTO[]> {
+        return this.globalSearchService.globalSearch(query, req.user as RequestUser);
     }
 }
