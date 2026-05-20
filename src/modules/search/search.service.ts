@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { ElasticTypes } from '../../common/constants';
 
@@ -9,77 +9,81 @@ import { ElasticTypes } from '../../common/constants';
  * - search: { index, query, from?, size?, sort?, track_total_hits? }
  * - update: { index, id, doc, doc_as_upsert? }
  * - delete: { index, id }
- *
  */
 
 @Injectable()
 export class SearchService {
     constructor(private readonly elasticSearchService: ElasticsearchService) {}
 
-    async search<T>(searchQuery: string, allNodesId: (string | null)[]) {
-        const isShort = searchQuery.length <= 3;
-        const hasNull = allNodesId.includes(null);
-        const nodeIds = allNodesId.filter((id): id is string => id !== null);
+    async search<T>(searchQuery: string, nodeIds: string[]) {
+        const normalizedQuery = searchQuery.trim();
+        const isShort = normalizedQuery.length <= 3;
+        const tokenCount = normalizedQuery.split(/\s+/).filter(Boolean).length;
+        const useStrictMatching = isShort || tokenCount === 1;
+
+        if (nodeIds.length === 0) {
+            return await this.elasticSearchService.search<T>({
+                index: [ElasticTypes.Node, ElasticTypes.DocumentVersion],
+                size: 10,
+                track_total_hits: true,
+                query: { match_none: {} },
+            });
+        }
+
+        const textQuery = {
+            multi_match: {
+                query: normalizedQuery,
+                type: 'best_fields' as const,
+                fields: [
+                    'content^5',
+                    'fileName^3',
+                    'fileName.keyword^4',
+                    'name^2',
+                    'description',
+                ],
+                ...(useStrictMatching
+                    ? { operator: 'and' as const }
+                    : { operator: 'or' as const, minimum_should_match: '70%' }),
+                ...(!isShort ? { fuzziness: 'AUTO' as const } : {}),
+            },
+        };
 
         return await this.elasticSearchService.search<T>({
             index: [ElasticTypes.Node, ElasticTypes.DocumentVersion],
             size: 10,
+            track_total_hits: true,
             query: {
                 bool: {
-                    must: [
-                        {
-                            multi_match: {
-                                query: searchQuery,
-                                fields: ['content^3', 'fileName^2', 'name^1', 'description^0.5'],
-                                ...(isShort ? {} : { fuzziness: 'AUTO' }),
-                            },
-                        },
-                    ],
                     should: [
                         {
                             bool: {
-                                filter: [{ term: { _index: ElasticTypes.DocumentVersion } }, { terms: { nodeId: nodeIds } }],
+                                filter: [
+                                    { term: { _index: ElasticTypes.DocumentVersion } },
+                                    { terms: { nodeId: nodeIds } },
+                                ],
+                                must: [textQuery],
                             },
                         },
                         {
                             bool: {
                                 filter: [
-                                    { term: { _index: ElasticTypes.Node } },
-                                    {
-                                        bool: {
-                                            should: [
-                                                ...(nodeIds.length ? [{ terms: { parentId: nodeIds } }] : []),
-                                                ...(hasNull
-                                                    ? [
-                                                          {
-                                                              bool: {
-                                                                  must_not: {
-                                                                      exists: { field: 'parentId' },
-                                                                  },
-                                                              },
-                                                          },
-                                                      ]
-                                                    : []),
-                                            ],
-                                            minimum_should_match: 1,
-                                        },
-                                    },
+                                    { term: { _index: ElasticTypes.Node} },
+                                    { term: { type: "DIRECTORY"} },
+                                    { ids: { values: nodeIds } },
                                 ],
+                                must: [textQuery],
                             },
                         },
                     ],
-
                     minimum_should_match: 1,
                 },
             },
-
             highlight: {
                 encoder: 'html',
                 type: 'unified',
                 pre_tags: ['<mark>'],
                 post_tags: ['</mark>'],
                 require_field_match: false,
-
                 fields: {
                     name: {
                         number_of_fragments: 0,
@@ -91,12 +95,13 @@ export class SearchService {
                         number_of_fragments: 0,
                     },
                     content: {
-                        fragment_size: 90,
-                        number_of_fragments: 1,
+                        fragment_size: 150,
+                        number_of_fragments: 2,
                         order: 'score',
                     },
                 },
             },
+            sort: [{ _score: { order: 'desc' } }],
         });
     }
 
