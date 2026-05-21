@@ -76,28 +76,13 @@ export class NodeService {
             currentId = node.parentId;
         }
 
-        parts.unshift({ id: null, name: '...' });
-
         return parts;
     }
 
-    async getDescendantIds(nodeId: string): Promise<string[]> {
-        const descendants: { id: string }[] = await this.prisma.$queryRaw`
-        WITH RECURSIVE r AS (
-        SELECT id FROM nodes WHERE id = ${nodeId}::uuid
-        UNION ALL
-        SELECT n.id
-        FROM nodes n
-        INNER JOIN r ON n.parent_id = r.id
-        )
-        SELECT id FROM r;
-        `;
-        return descendants.map((descendant: { id: string }) => descendant.id);
-    }
-
+    
     async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<TreeItemDto[]> {
         const { parentId, type } = query;
-
+        
         const isOwner = userReq.activeRole === 'Owner';
 
         const nodes = await this.prisma.node.findMany({
@@ -252,6 +237,20 @@ export class NodeService {
         } catch (_) {}
         return toNodeDto(deleteNode);
     }
+    async getDescendantIds(nodeId: string): Promise<string[]> {
+        const descendants: { id: string }[] = await this.prisma.$queryRaw`
+        WITH RECURSIVE r AS (
+        SELECT id FROM nodes WHERE id = ${nodeId}::uuid
+        UNION ALL
+        SELECT n.id
+        FROM nodes n
+        INNER JOIN r ON n.parent_id = r.id
+        )
+        SELECT id FROM r;
+        `;
+        return descendants.map((descendant: { id: string }) => descendant.id);
+    }
+
 
     /**
      *  helpers

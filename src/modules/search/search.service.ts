@@ -52,6 +52,9 @@ export class SearchService {
             index: [ElasticTypes.Node, ElasticTypes.DocumentVersion],
             size: 10,
             track_total_hits: true,
+            _source:{
+              excludes:['content']
+            },
             query: {
                 bool: {
                     should: [
@@ -86,9 +89,6 @@ export class SearchService {
                 require_field_match: false,
                 fields: {
                     name: {
-                        number_of_fragments: 0,
-                    },
-                    description: {
                         number_of_fragments: 0,
                     },
                     fileName: {

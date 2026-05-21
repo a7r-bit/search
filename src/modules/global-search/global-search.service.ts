@@ -23,7 +23,6 @@ export class GlobalSearchService {
     async globalSearch(query: SearchFileDto, _user: RequestUser): Promise<GlobalSearchResponseDto> {
         const descendantIds = await this.nodeService.getDescendantIds(query.currentNodeId);
         const elasticResult = await this.searchService.search(query.searchQuery, descendantIds);
-
         const hits = elasticResult.hits.hits ?? [];
         const total =
             typeof elasticResult.hits.total === 'number'

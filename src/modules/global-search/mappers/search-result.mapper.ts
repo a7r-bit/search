@@ -54,7 +54,6 @@ function buildFileHighlight(
 }
 
 function formatFilePath(path: string): string {
-    // return '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
     return path
 }
 
