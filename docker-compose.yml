@@ -86,8 +86,6 @@ services:
         container_name: elasticsearch
         env_file:
             - $ENV_FILE
-        ports:
-            - 9200:9200
        
 
         environment:
