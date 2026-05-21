@@ -11,7 +11,6 @@ import { SortingParams, SortingParam } from '../../common/decorators/sorting-par
 import { PathPart } from '../../common/types/path-part.dto';
 import { CustomParseUUIDPipe } from '../../common/pipes';
 import { CheckGroupPolitic } from '../../common/guards/group-politic.guard';
-import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
 import { TreeItemDto } from './dto/tree-item.dto';
 
