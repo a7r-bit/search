@@ -117,10 +117,4 @@ export class NodeController {
         return await this.nodeService.delete(id);
     }
 
-
-    @Get(':id/descendant-ids')
-    async testGetDescendantIds(@Param('id', new CustomParseUUIDPipe()) id: string){
-        return await this.nodeService.getDescendantIds(id)
-    }
-
 }
