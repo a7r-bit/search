@@ -10,9 +10,8 @@ import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { PathPart } from '../../common/types/path-part.dto';
 import { NodePermissionType, NodeType } from '@prisma/client';
-import { ListNodesQueryDto, toNodeWithPermissionsDto } from './dto';
+import { ListNodesQueryDto } from './dto';
 import { PoliticService } from '../politic/politic.service';
-import { NodeWithPermissionsDto } from './dto/node-with-permissions.dto';
 import { RequestUser } from '../../common/types/request-user';
 import { NodeIndexProps } from '../../common/elasic-search-models';
 import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
@@ -77,15 +76,13 @@ export class NodeService {
             currentId = node.parentId;
         }
 
-        parts.unshift({ id: null, name: '...' });
-
         return parts;
     }
 
-
+    
     async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<TreeItemDto[]> {
         const { parentId, type } = query;
-
+        
         const isOwner = userReq.activeRole === 'Owner';
 
         const nodes = await this.prisma.node.findMany({
@@ -113,25 +110,24 @@ export class NodeService {
             const latest = node.documentVersions[0] ?? null;
             const isDirectory = node.type === NodeType.DIRECTORY;
 
-            
-            result.push(
-                {
-                    id:node.id,
-                    parentId:node.parentId??null,
-                    kind:isDirectory?"directory":"file",
-                    name: latest?.mediaFile?.fileName??node.name,
-                    hasChildren:isDirectory? node._count.children>0:false,
-                    permissions,
-                    document:latest?{
-                        latestVersionId:latest.id,
-                        version:latest.version,
-                        fileName:latest.mediaFile?.fileName,
-                        fileUrl:latest.mediaFile?.filePath,
-                        conversionStatus:latest.conversionStatus,
-                        updatedAt:latest.updatedAt,
-                    }:null,
-                }
-            );
+            result.push({
+                id: node.id,
+                parentId: node.parentId ?? null,
+                kind: isDirectory ? 'directory' : 'file',
+                name: latest?.mediaFile?.fileName ?? node.name,
+                hasChildren: isDirectory ? node._count.children > 0 : false,
+                permissions,
+                document: latest
+                    ? {
+                          latestVersionId: latest.id,
+                          version: latest.version,
+                          fileName: latest.mediaFile?.fileName,
+                          fileUrl: latest.mediaFile?.filePath,
+                          conversionStatus: latest.conversionStatus,
+                          updatedAt: latest.updatedAt,
+                      }
+                    : null,
+            });
         }
 
         return result;
@@ -141,11 +137,11 @@ export class NodeService {
         const node = await this.prisma.node.findUnique({
             where: { id },
         });
-        if(dto.name){
+        if (dto.name) {
             await this.isUnique(dto.name, node.type, node.parentId);
         }
         if (!node) throw new NotFoundException('Директория не найдена');
-        
+
         const updated = await this.prisma.node.update({
             where: { id },
             data: {
@@ -241,6 +237,20 @@ export class NodeService {
         } catch (_) {}
         return toNodeDto(deleteNode);
     }
+    async getDescendantIds(nodeId: string): Promise<string[]> {
+        const descendants: { id: string }[] = await this.prisma.$queryRaw`
+        WITH RECURSIVE r AS (
+        SELECT id FROM nodes WHERE id = ${nodeId}::uuid
+        UNION ALL
+        SELECT n.id
+        FROM nodes n
+        INNER JOIN r ON n.parent_id = r.id
+        )
+        SELECT id FROM r;
+        `;
+        return descendants.map((descendant: { id: string }) => descendant.id);
+    }
+
 
     /**
      *  helpers
