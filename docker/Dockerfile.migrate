@@ -1,6 +1,14 @@
-FROM dockerhub.mingas.by/node:22-alpine
+FROM dockerhub.mingas.by/node:22-slim
 
-RUN apk add --no-cache openssl libc6-compat
+
+
+RUN apt-get update \
+
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+
+    && rm -rf /var/lib/apt/lists/*
+
+
 
 WORKDIR /app
 
