@@ -19,7 +19,6 @@ build-migrate-job:
         - docker push $CI_REGISTRY_IMAGE_MIGRATE:$CI_COMMIT_SHORT_SHA
         - docker tag $CI_REGISTRY_IMAGE_MIGRATE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE_MIGRATE:latest
         - docker push $CI_REGISTRY_IMAGE_MIGRATE:latest
-        - docker system prune -a -f
 
 build-app-job:
     stage: build
@@ -33,7 +32,6 @@ build-app-job:
         - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
         - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
         - docker push $CI_REGISTRY_IMAGE:latest
-        - docker system prune -a -f
 
 
 deploy-job:
@@ -52,6 +50,5 @@ deploy-job:
         - docker compose --env-file "$ENV_FILE" config -q
         - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
         - docker compose --env-file "$ENV_FILE" up -d
-        - docker system prune -a -f
     environment:
         name: prod
