@@ -1,7 +1,5 @@
 # --- builder ---
-FROM dockerhub.mingas.by/node:22-alpine AS builder
-
-RUN apk add --no-cache openssl libc6-compat
+FROM dockerhub.mingas.by/node:22 AS builder
 
 WORKDIR /app
 
@@ -17,9 +15,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 
 # --- runner ---
-FROM dockerhub.mingas.by/node:22-alpine AS runner
+FROM dockerhub.mingas.by/node:22 AS runner
 
-RUN apk add --no-cache openssl libc6-compat
+
 
 WORKDIR /app
 ENV NODE_ENV=production
