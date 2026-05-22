@@ -1,0 +1,10 @@
+FROM dockerhub.mingas.by/node:22
+
+WORKDIR /app
+
+RUN npm install prisma@6.19.3 && npm cache clean --force
+
+COPY prisma ./prisma
+
+
+CMD ["npx", "prisma", "migrate", "deploy"]

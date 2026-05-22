@@ -1,42 +1,57 @@
 stages:
-  - build
-  - deploy
+    - build
+    - deploy
 
 variables:
-  SHORT_NAME: search
-  CI_REGISTRY_IMAGE: dockerhub.mingas.by/${SHORT_NAME}
+    SHORT_NAME: search
+    CI_REGISTRY_IMAGE: dockerhub.mingas.by/${SHORT_NAME}
+    CI_REGISTRY_IMAGE_MIGRATE: dockerhub.mingas.by/${SHORT_NAME}-migrate
 
-build-job:
-  stage: build
-  only:
-    - main
-  tags:
-    - search
-  script:
-    - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker pull $CI_REGISTRY_IMAGE:latest-migrate || true
-    - docker build -f ./docker/Dockerfile --target runner --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
-    - docker build -f ./docker/Dockerfile --target migrate --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest-migrate -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA-migrate .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA-migrate
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA-migrate $CI_REGISTRY_IMAGE:latest-migrate
-    - docker push $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_IMAGE:latest-migrate
-    - docker system prune -a -f
+build-migrate-job:
+    stage: build
+    only:
+        - main
+    tags:
+        - search
+    script:
+        - docker pull $CI_REGISTRY_IMAGE_MIGRATE:latest || true
+        - docker build -f ./docker/Dockerfile.migrate --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE_MIGRATE:latest -t ${CI_REGISTRY_IMAGE_MIGRATE}:$CI_COMMIT_SHORT_SHA .
+        - docker push $CI_REGISTRY_IMAGE_MIGRATE:$CI_COMMIT_SHORT_SHA
+        - docker tag $CI_REGISTRY_IMAGE_MIGRATE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE_MIGRATE:latest
+        - docker push $CI_REGISTRY_IMAGE_MIGRATE:latest
+        - docker system prune -a -f
+
+build-app-job:
+    stage: build
+    only:
+        - main
+    tags:
+        - search
+    script:
+        - docker pull $CI_REGISTRY_IMAGE:latest || true
+        - docker build -f ./docker/Dockerfile --target runner --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+        - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+        - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+        - docker push $CI_REGISTRY_IMAGE:latest
+        - docker system prune -a -f
+
 
 deploy-job:
-  stage: deploy
-  needs:
-    - build-job
-  only:
-    - main
-  tags:
-    - search
-  script:
-    - docker compose --env-file "$ENV_FILE" config -q
-    - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
-    - docker compose --env-file "$ENV_FILE" up -d
-    - docker system prune -a -f
-  environment:
-    name: prod
+    stage: deploy
+    needs:
+        - build-migrate-job
+        - build-app-job
+    only:
+        - main
+    tags:
+        - search
+    script:
+        - export CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE
+        - export CI_REGISTRY_IMAGE_MIGRATE=$CI_REGISTRY_IMAGE_MIGRATE
+        - export CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA
+        - docker compose --env-file "$ENV_FILE" config -q
+        - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
+        - docker compose --env-file "$ENV_FILE" up -d
+        - docker system prune -a -f
+    environment:
+        name: prod

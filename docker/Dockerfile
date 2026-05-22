@@ -13,17 +13,6 @@ COPY . .
 RUN npm run build
 RUN npm ci --omit=dev && npm cache clean --force
 
-# --- migrate (Prisma CLI, devDependencies) ---
-FROM dockerhub.mingas.by/node:22 AS migrate
-
-WORKDIR /app
-
-COPY package*.json ./
-COPY prisma ./prisma
-
-RUN npm ci && npm cache clean --force
-
-CMD ["npx", "prisma", "migrate", "deploy"]
 
 # --- runner ---
 FROM dockerhub.mingas.by/node:22 AS runner
