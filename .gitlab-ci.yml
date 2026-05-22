@@ -14,10 +14,15 @@ build-job:
     - search
   script:
     - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker build -f ./docker/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+    - docker pull $CI_REGISTRY_IMAGE:latest-migrate || true
+    - docker build -f ./docker/Dockerfile --target runner --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+    - docker build -f ./docker/Dockerfile --target migrate --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest-migrate -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA-migrate .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA-migrate
     - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA-migrate $CI_REGISTRY_IMAGE:latest-migrate
     - docker push $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest-migrate
     - docker system prune -a -f
 
 deploy-job:
@@ -30,6 +35,7 @@ deploy-job:
     - search
   script:
     - docker compose --env-file "$ENV_FILE" config -q
+    - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
     - docker compose --env-file "$ENV_FILE" up -d
     - docker system prune -a -f
   environment:

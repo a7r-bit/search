@@ -1,16 +1,28 @@
 services:
+
+    migrate:
+        image: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}-migrate
+        container_name: migrate
+        env_file:
+            - $ENV_FILE
+        profiles:
+            - migrate
+        environment:
+            DATABASE_URL: ${DATABASE_URL}
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: no
+
     app:
         image: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
         restart: unless-stopped
         container_name: nest_app
         pull_policy: always
+        command: ["node", "dist/main.js"]
 
         env_file:
             - $ENV_FILE
-
-
-
-        command: sh ./docker/init-prisma.sh
 
         environment:
             NODE_ENV: production
