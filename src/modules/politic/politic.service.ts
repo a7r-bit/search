@@ -33,8 +33,6 @@ export class PoliticService {
             where: { id: { in: groupIds } },
             select: { id: true },
         });
-        Logger.log(existingGroups);
-        Logger.log(groupIds);
         if (existingGroups.length !== groupIds.length) {
             throw new NotFoundException('Групповая политика не найдена');
         }
