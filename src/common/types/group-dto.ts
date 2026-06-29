@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { NodePermissionType } from '@prisma/client';
 
 export class GroupDTO {
     @ApiProperty()
