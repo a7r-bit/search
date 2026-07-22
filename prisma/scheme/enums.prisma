@@ -1,0 +1,18 @@
+enum NodeType {
+  DIRECTORY
+  DOCUMENT
+}
+
+enum ConversionStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+enum NodePermissionType {
+  READ
+  WRITE
+  DELETE
+  ADMIN
+}

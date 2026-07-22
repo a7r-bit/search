@@ -1,0 +1,28 @@
+model DocumentVersion {
+  id               String           @id @default(uuid()) @db.Uuid
+  version          Int
+  nodeId           String           @map("node_id") @db.Uuid
+  node             Node             @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  mediaFile        MediaFile?
+  conversionStatus ConversionStatus @default(PENDING) @map("conversion_status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([version, nodeId])
+  @@map("document_versions")
+}
+
+model MediaFile {
+  id                String           @id @default(uuid()) @db.Uuid
+  filePath          String           @map("file_path")
+  fileName          String           @map("file_name")
+  extention         String
+  documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("media_file")
+}

@@ -1,0 +1,34 @@
+model Node {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        NodeType
+  parentId    String?  @map("parent_id") @db.Uuid
+  parent      Node?    @relation("NodeToNode", fields: [parentId], references: [id])
+  children    Node[]   @relation("NodeToNode")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  documentVersions DocumentVersion[]
+  likedBy          LikedNode[]
+  accesses         NodeAccess[]
+
+  @@unique([parentId, name, type])
+  @@index([parentId])
+  @@index([type])
+  @@map("nodes")
+}
+
+model LikedNode {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId String @map("node_id") @db.Uuid
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, nodeId])
+  @@map("liked_nodes")
+}

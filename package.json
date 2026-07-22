@@ -21,6 +21,7 @@
     "postinstall": "prisma generate"
   },
   "prisma": {
+    "schema": "prisma/scheme",
     "seed": "node prisma/seed.js"
   },
   "dependencies": {

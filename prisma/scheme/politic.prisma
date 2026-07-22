@@ -1,0 +1,30 @@
+model Group {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String  @unique
+  externalId String? @unique @map("external_id")
+
+  access NodeAccess[]
+  users  User[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("groups")
+}
+
+model NodeAccess {
+  id          String               @id @default(uuid()) @db.Uuid
+  groupId     String               @map("group_id") @db.Uuid
+  group       Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  nodeId      String               @map("node_id") @db.Uuid
+  node        Node                 @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  permissions NodePermissionType[] @default([READ])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([groupId, nodeId])
+  @@index([groupId])
+  @@index([nodeId])
+  @@map("node_accesses")
+}
