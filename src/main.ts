@@ -5,9 +5,10 @@ import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
+import NestjsLoggerServiceAdapter from './infrastructure/logger/infrastructure/winston/nestjs/nestjsLoggerServiceAdapter';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {bufferLogs:true, logger:false});
 
     app.connectMicroservice<MicroserviceOptions>({
         transport: Transport.GRPC,
@@ -22,6 +23,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api');
 
     app.useGlobalPipes(new ValidationPipe({}));
+    app.useLogger(app.get(NestjsLoggerServiceAdapter));
 
     app.enableCors();
 
