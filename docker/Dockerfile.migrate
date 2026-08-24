@@ -10,4 +10,4 @@ RUN npm install prisma@6.19.3 && npm cache clean --force
 
 COPY prisma ./prisma
 
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD ["npx", "prisma", "migrate", "deploy", "--schema=prisma/scheme"]
