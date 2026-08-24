@@ -62,6 +62,7 @@ export default class LoggerService implements Logger {
   }
 
   private getLogData(data?: LogData): LogData {
+    const user = this.contextStorageService.get("user");
     return {
       ...data,
       organization: data?.organization || this.organization,
@@ -70,6 +71,7 @@ export default class LoggerService implements Logger {
       sourceClass: data?.sourceClass || this.sourceClass,
       correlationId:
         data?.correlationId || this.contextStorageService.getContextId(),
+      props: user ? { ...data?.props, user } : data?.props,
     };
   }
 

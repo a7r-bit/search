@@ -33,8 +33,8 @@ import FileTransport from "../transport/fileTransport";
                 const transports = [];
                 // console transport
                 transports.push(ConsoleTransport.createColorize());
-                // file transport
-                transports.push(FileTransport.create());
+                 // file transport
+                // transports.push(FileTransport.create());
                 return transports;
             },
             inject:[ConfigService]
