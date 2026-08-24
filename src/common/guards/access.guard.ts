@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { TokenService } from '../../modules/token/token.service';
 import { RoleService } from '../../modules/role/role.service';
@@ -7,6 +7,7 @@ import { PayloadDTO } from '../../modules/token';
 import { RequestUser } from '../types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import ContextStorageService, { ContextStorageServiceKey } from '../../infrastructure/context/domain/interfaces/contextStorageService';
 
 /*
  *   Проверка токена при обращении к серверу и установка роли,
@@ -31,6 +32,7 @@ export class AccessGuard implements CanActivate {
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
         private readonly userService: UserService,
+        @Inject(ContextStorageServiceKey) private readonly contextStorageService: ContextStorageService
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -70,6 +72,10 @@ export class AccessGuard implements CanActivate {
                     permissions: activeRole.permissions.flatMap((p) => p.name),
                 };
                 request.user = requestUser;
+                this.contextStorageService.set("user", {
+                    id: requestUser.id,
+                    uidNumber: requestUser.uidNumber,
+                    activeRole: requestUser.activeRole,})
 
                 if (!user.role.some((r) => r.id == activeRole.id)) {
                     throw new UnauthorizedException('Невалидные данные токена');

@@ -21,6 +21,8 @@ import {
     UserModule,
 } from './modules';
 import { adminJsImport } from './modules/admin/admin-js.import';
+import { LoggerModule } from './infrastructure/logger/infrastructure/winston/nestjs/logger.module';
+import { ContextModule } from './infrastructure/context/infrastructure/nestjs/contextModule';
 
 
 @Module({
@@ -40,7 +42,9 @@ import { adminJsImport } from './modules/admin/admin-js.import';
         FileProviderModule,
         SyncModule,
         TokenModule,
-        adminJsImport
+        ContextModule,
+        LoggerModule,
+        ...(process.env.ENABLE_ADMIN === 'true' ? [adminJsImport] : []),
     ],
     controllers: [AppController],
     providers: [AppService, { provide: APP_GUARD, useClass: AccessGuard }, { provide: APP_GUARD, useClass: ScopeGuard }],
