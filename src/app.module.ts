@@ -24,7 +24,6 @@ import { adminJsImport } from './modules/admin/admin-js.import';
 import { LoggerModule } from './infrastructure/logger/infrastructure/winston/nestjs/logger.module';
 import { ContextModule } from './infrastructure/context/infrastructure/nestjs/contextModule';
 
-
 @Module({
     imports: [
         NodeModule,
@@ -32,7 +31,6 @@ import { ContextModule } from './infrastructure/context/infrastructure/nestjs/co
         AuthModule,
         UserModule,
         RoleModule,
-        TokenModule,
         DocumentVersionModule,
         LikedNodeModule,
         GlobalSearchModule,
