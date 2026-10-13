@@ -52,7 +52,6 @@ export class NodeController {
         return await this.nodeService.listChildren(query, req.user as RequestUser, sort);
     }
 
-
     @Get(':id')
     @ApiOperation({
         summary: 'Получить узел по ID',
@@ -105,7 +104,6 @@ export class NodeController {
         return await this.nodeService.getPath(id);
     }
 
-
     @Delete(':id')
     @ApiOperation({
         summary: 'Удалить узел',
@@ -116,5 +114,4 @@ export class NodeController {
     async remove(@Param('id', new CustomParseUUIDPipe()) id: string): Promise<NodeDto> {
         return await this.nodeService.delete(id);
     }
-
 }

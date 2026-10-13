@@ -5,8 +5,8 @@ import { PoliticModule } from '../politic';
 import { EmployeesParserModule } from '../../infrastructure';
 
 @Module({
-  imports:[ PoliticModule, EmployeesParserModule],
-  controllers: [SyncController],
-  providers: [SyncService],
+    imports: [PoliticModule, EmployeesParserModule],
+    controllers: [SyncController],
+    providers: [SyncService],
 })
 export class SyncModule {}

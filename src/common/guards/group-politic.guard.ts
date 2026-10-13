@@ -17,9 +17,7 @@ import { PoliticService } from '../../modules/politic/politic.service';
 
 @Injectable()
 export class CheckGroupPolitic implements CanActivate {
-    constructor(
-        private readonly policeService: PoliticService,
-    ) { }
+    constructor(private readonly policeService: PoliticService) {}
     async canActivate(context: ExecutionContext): Promise<boolean> {
         Logger.debug('CheckGroupPolitic guard', CheckGroupPolitic.name);
 

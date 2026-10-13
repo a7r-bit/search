@@ -132,39 +132,39 @@ export const adminJsImport = import('@adminjs/nestjs').then(({ AdminModule }) =>
                             options: {},
                         },
                         {
-                          resource: { model: getModelByName('NodeAccess'), client: prisma },
-                          options: {
-                            listProperties: ['id', 'group', 'node', 'permissions', 'createdAt'],
-                            showProperties: ['id', 'group', 'node', 'permissions', 'createdAt', 'updatedAt'],
-                            newProperties: ['group', 'node', 'permissions'],
-                            editProperties: ['group', 'node', 'permissions'],
-                            properties: {
-                              group: {
-                                label: 'Группа',
-                                isVisible: { list: true, show: true, edit: true, new: true, filter: false },
-                              },
-                              node: {
-                                label: 'Узел',
-                                isVisible: { list: true, show: true, edit: true, new: true, filter: false },
-                              },
-                              groupId: {
-                                isVisible: { list: false, show: true, edit: false, new: false, filter: false },
-                              },
-                              nodeId: {
-                                isVisible: { list: false, show: true, edit: false, new: false, filter: false },
-                              },
-                              permissions: {
-                                isArray: true,
-                                availableValues: [
-                                  { value: 'READ', label: 'READ' },
-                                  { value: 'WRITE', label: 'WRITE' },
-                                  { value: 'DELETE', label: 'DELETE' },
-                                  { value: 'ADMIN', label: 'ADMIN' },
-                                ],
-                                isVisible: { list: true, show: true, edit: true, new: true, filter: false },
-                              },
+                            resource: { model: getModelByName('NodeAccess'), client: prisma },
+                            options: {
+                                listProperties: ['id', 'group', 'node', 'permissions', 'createdAt'],
+                                showProperties: ['id', 'group', 'node', 'permissions', 'createdAt', 'updatedAt'],
+                                newProperties: ['group', 'node', 'permissions'],
+                                editProperties: ['group', 'node', 'permissions'],
+                                properties: {
+                                    group: {
+                                        label: 'Группа',
+                                        isVisible: { list: true, show: true, edit: true, new: true, filter: false },
+                                    },
+                                    node: {
+                                        label: 'Узел',
+                                        isVisible: { list: true, show: true, edit: true, new: true, filter: false },
+                                    },
+                                    groupId: {
+                                        isVisible: { list: false, show: true, edit: false, new: false, filter: false },
+                                    },
+                                    nodeId: {
+                                        isVisible: { list: false, show: true, edit: false, new: false, filter: false },
+                                    },
+                                    permissions: {
+                                        isArray: true,
+                                        availableValues: [
+                                            { value: 'READ', label: 'READ' },
+                                            { value: 'WRITE', label: 'WRITE' },
+                                            { value: 'DELETE', label: 'DELETE' },
+                                            { value: 'ADMIN', label: 'ADMIN' },
+                                        ],
+                                        isVisible: { list: true, show: true, edit: true, new: true, filter: false },
+                                    },
+                                },
                             },
-                          },
                         },
                         {
                             resource: { model: getModelByName('Role'), client: prisma },

@@ -5,7 +5,6 @@ import winston from 'winston';
 
 export const WinstonLoggerTransportsKey = Symbol();
 
-
 export default class WinstonLogger implements Logger {
     private logger: winston.Logger;
 
@@ -44,7 +43,7 @@ export default class WinstonLogger implements Logger {
                 }),
                 winston.format.json(),
             ),
-            
+
             transports: transports,
             exceptionHandlers: transports,
             rejectionHandlers: transports,

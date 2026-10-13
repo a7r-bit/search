@@ -27,8 +27,7 @@ export class PoliticController {
     @UseGuards(NodeAdminGuard)
     @ApiOperation({
         summary: 'Получить группы с правами доступа к узлу',
-        description:
-            'Возвращает группы, у которых есть доступ к указанному узлу, с перечнем прав. Требуется право ADMIN на узел.',
+        description: 'Возвращает группы, у которых есть доступ к указанному узлу, с перечнем прав. Требуется право ADMIN на узел.',
     })
     @ApiOkResponse({ type: GroupWithAccessesDTO, isArray: true })
     async groupsWithAccesses(@Query() query: GroupsForNodeQueryDto): Promise<GroupWithAccessesDTO[]> {
@@ -50,5 +49,4 @@ export class PoliticController {
     ): Promise<GroupWithAccessesDTO[]> {
         return await this.politicService.updateGroupsAccesses(query.nodeId, body);
     }
-    
 }

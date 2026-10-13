@@ -1,14 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { ROLE_KEY } from "../decorators";
-import { RequestUser } from "../types/request-user";
-import { AppRole } from "../constants";
+import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLE_KEY } from '../decorators';
+import { RequestUser } from '../types/request-user';
+import { AppRole } from '../constants';
 
 @Injectable()
-
 export class RoleGuard implements CanActivate {
     private readonly logger = new Logger(RoleGuard.name);
-    constructor(private reflector: Reflector) { }
+    constructor(private reflector: Reflector) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         this.logger.debug('RoleGuard guard');
@@ -34,5 +33,4 @@ export class RoleGuard implements CanActivate {
 
         return hasRequiredRole;
     }
-
 }

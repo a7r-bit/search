@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { RoleService } from '../role';
 import { PayloadDTO, TokenService } from '../token';
@@ -6,19 +6,19 @@ import { PoliticService } from '../politic/politic.service';
 import { EmployeesParserService } from '../../infrastructure/employees-parser';
 import { PrismaService } from '../prisma';
 import { RequestUser } from '../../common/types/request-user';
+import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 
 @Injectable()
 export class AuthService {
-    private readonly logger = new Logger(AuthService.name);
-
     constructor(
+        @Inject(LoggerKey) private readonly logger: Logger,
         private readonly userService: UserService,
         private readonly roleService: RoleService,
         private readonly tokenService: TokenService,
         private readonly groupService: PoliticService,
         private readonly employeesService: EmployeesParserService,
         private readonly prisma: PrismaService,
-    ) { }
+    ) {}
     async signIn(req: any) {
         const reqUser: RequestUser = req.user;
 
@@ -73,7 +73,6 @@ export class AuthService {
             activeRole: user.role[0].name,
             politicGroups: politicGroups.map((g) => g.id),
         };
-        this.logger.warn(`Вход в программу userId: ${payload.id} politicGroups: ${politicGroups.length}`);
 
         const tokens = await this.tokenService.generateTokens(payload);
 

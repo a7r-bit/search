@@ -1,13 +1,10 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { DocumentConversionProcessor } from './queues/document-conversion/document-conversion.processor';
 import { DocumentConversionService } from './queues/document-conversion/document-conversion.service';
 import { GotenbergModule } from '../gotenberg';
 import { PdfModule } from '../pdf';
-import { SearchModule } from '../search';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ElasticSearchProducer } from './queues/elasticsearch/elasticsearch.producer';
-import { ElasticsearchProcessor } from './queues/elasticsearch/elasticsearch.processor';
 import { S3Module } from '../../infrastructure/s3';
 
 @Module({
@@ -27,32 +24,20 @@ import { S3Module } from '../../infrastructure/s3';
                 };
             },
         }),
-        BullModule.registerQueue(
-            {
-                name: 'documentConversion',
-                defaultJobOptions: {
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 2000 },
-                    removeOnComplete: true,
-                },
+        BullModule.registerQueue({
+            name: 'documentConversion',
+            defaultJobOptions: {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 2000 },
+                removeOnComplete: true,
             },
-            {
-                name: 'elasticsearch',
-                defaultJobOptions: {
-                    attempts: 5,
-                    backoff: { type: 'exponential', delay: 1000 },
-                    removeOnComplete: 100,
-                    removeOnFail: 500,
-                },
-            },
-        ),
+        }),
         ConfigModule,
         GotenbergModule,
         PdfModule,
-        SearchModule,
         S3Module,
     ],
-    providers: [DocumentConversionProcessor, DocumentConversionService, ElasticsearchProcessor, ElasticSearchProducer],
-    exports: [DocumentConversionService, ElasticSearchProducer],
+    providers: [DocumentConversionProcessor, DocumentConversionService],
+    exports: [DocumentConversionService],
 })
 export class BullmqModule {}

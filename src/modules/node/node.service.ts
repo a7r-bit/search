@@ -5,16 +5,12 @@ import { toNodeDto } from './dto/node-dto.mapper';
 import { NodeDto } from './dto/node.dto';
 import { PrismaService } from '../prisma';
 import { DocumentVersionService } from '../document-version';
-import { ElasticTypes } from '../../common/constants';
-import { instanceToPlain } from 'class-transformer';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { PathPart } from '../../common/types/path-part.dto';
 import { NodePermissionType, NodeType } from '@prisma/client';
 import { ListNodesQueryDto } from './dto';
 import { PoliticService } from '../politic/politic.service';
 import { RequestUser } from '../../common/types/request-user';
-import { NodeIndexProps } from '../../common/elasic-search-models';
-import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
 import { TreeItemDto } from './dto/tree-item.dto';
 
 @Injectable()
@@ -23,7 +19,6 @@ export class NodeService {
         private readonly prisma: PrismaService,
         private readonly documentVersionService: DocumentVersionService,
         private readonly politicService: PoliticService,
-        private readonly esProducer: ElasticSearchProducer,
     ) {}
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
@@ -38,16 +33,6 @@ export class NodeService {
             },
         });
 
-        await this.esProducer.indexAsync(
-            ElasticTypes.Node,
-            created.id,
-            instanceToPlain<NodeIndexProps>({
-                name: created.name,
-                type: created.type,
-                description: created.description,
-                parentId: created.parentId,
-            }),
-        );
         return toNodeDto(created);
     }
 
@@ -79,10 +64,9 @@ export class NodeService {
         return parts;
     }
 
-    
     async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<TreeItemDto[]> {
         const { parentId, type } = query;
-        
+
         const isOwner = userReq.activeRole === 'Owner';
 
         const nodes = await this.prisma.node.findMany({
@@ -150,17 +134,6 @@ export class NodeService {
             },
         });
 
-        await this.esProducer.indexAsync(
-            ElasticTypes.Node,
-            updated.id,
-            instanceToPlain<NodeIndexProps>({
-                name: updated.name,
-                type: updated.type,
-                description: updated.description,
-                parentId: updated.parentId,
-            }),
-        );
-
         return toNodeDto(updated);
     }
 
@@ -189,17 +162,6 @@ export class NodeService {
             where: { id },
             data: { parentId: newParentId },
         });
-
-        await this.esProducer.indexAsync(
-            ElasticTypes.Node,
-            moved.id,
-            instanceToPlain<NodeIndexProps>({
-                name: moved.name,
-                type: moved.type,
-                description: moved.description,
-                parentId: moved.parentId,
-            }),
-        );
 
         return toNodeDto(moved);
     }
@@ -232,9 +194,6 @@ export class NodeService {
         }
 
         const deleteNode = await this.prisma.node.delete({ where: { id } });
-        try {
-            await this.esProducer.deleteAsync(ElasticTypes.Node, node.id);
-        } catch (_) {}
         return toNodeDto(deleteNode);
     }
     async getDescendantIds(nodeId: string): Promise<string[]> {
@@ -250,7 +209,6 @@ export class NodeService {
         `;
         return descendants.map((descendant: { id: string }) => descendant.id);
     }
-
 
     /**
      *  helpers

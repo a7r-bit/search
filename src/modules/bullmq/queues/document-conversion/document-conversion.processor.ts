@@ -1,29 +1,25 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GotenbergService } from '../../../gotenberg/gotenberg.service';
 import { PdfService } from '../../../pdf/pdf.service';
-import { SearchService } from '../../../search';
-import { instanceToPlain } from 'class-transformer';
-import { ElasticTypes } from '../../../../common/constants';
-import { DocumentVersionIndexDto } from '../../../../common/elasic-search-models';
 import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
 import { S3Service } from '../../../../infrastructure/s3/s3.service';
 import path from 'path';
+import { LoggerKey } from '../../../../infrastructure/logger/domain/logger';
 
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
     constructor(
+        @Inject(LoggerKey) private logger: Logger,
         private readonly prisma: PrismaService,
         private readonly gotenbergService: GotenbergService,
         private readonly pdfService: PdfService,
-        private readonly searchService: SearchService,
         private readonly s3Service: S3Service,
     ) {
         super();
     }
-    private readonly logger = new Logger(DocumentConversionProcessor.name);
 
     async process(job: Job<DocumentConversionJobDto>) {
         const { documentVersionId, key, isPDF } = job.data;
@@ -55,20 +51,6 @@ export class DocumentConversionProcessor extends WorkerHost {
             include: { mediaFile: true },
             data: { conversionStatus: 'DONE' },
         });
-        await this.searchService.indexDocument(
-            ElasticTypes.DocumentVersion,
-            documentVersionId,
-            instanceToPlain(
-                new DocumentVersionIndexDto(
-                    text,
-                    documentVersion.createdAt,
-                    documentVersion.nodeId,
-                    documentVersion.mediaFile.fileName,
-                    documentVersion.mediaFile.filePath,
-                    documentVersion.version,
-                ),
-            ),
-        );
 
         this.logger.log(`🧧Файл для конвертации на пути ${mediaFile.filePath}`);
 

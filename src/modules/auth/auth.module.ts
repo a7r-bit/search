@@ -13,4 +13,4 @@ import { EmployeesParserModule } from '../../infrastructure/employees-parser';
     imports: [UserModule, RoleModule, TokenModule, PoliticModule, EmployeesParserModule],
     providers: [AuthService, LdapStrategy],
 })
-export class AuthModule { }
+export class AuthModule {}

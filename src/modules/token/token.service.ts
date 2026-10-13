@@ -6,7 +6,6 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TokenService {
-
     private readonly accessSecret: string;
     private readonly refreshSecret: string;
     private readonly accessExpires: string;

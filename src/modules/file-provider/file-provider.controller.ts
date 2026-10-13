@@ -1,6 +1,6 @@
-import { GrpcMethod } from "@nestjs/microservices";
-import { FileProviderService } from "./file-provider.service";
-import { Controller } from "@nestjs/common";
+import { GrpcMethod } from '@nestjs/microservices';
+import { FileProviderService } from './file-provider.service';
+import { Controller } from '@nestjs/common';
 
 interface GetFileUrlRequest {
     documentVersionId: string;
@@ -13,12 +13,12 @@ export interface GetFileUrlResponse {
     extention: string;
 }
 
-export interface GetAccessToFileRequest{
+export interface GetAccessToFileRequest {
     documentVersionId: string;
     tabNumber: string;
 }
 
-export interface GetAccessToFileResponse{
+export interface GetAccessToFileResponse {
     getAccessToFile: boolean;
 }
 
@@ -28,14 +28,14 @@ export class FileProviderController {
 
     @GrpcMethod('FileProviderService', 'getFileUrl')
     async getFileUrl(data: GetFileUrlRequest): Promise<GetFileUrlResponse> {
-        const {documentVersionId, expiresIn} = data;
+        const { documentVersionId, expiresIn } = data;
         const response = await this.fileProviderService.getFileUrl(documentVersionId, expiresIn);
-        return response
+        return response;
     }
     @GrpcMethod('FileProviderService', 'getAccessToFile')
     async getAccessToFile(data: GetAccessToFileRequest): Promise<GetAccessToFileResponse> {
-        const {documentVersionId, tabNumber} = data;
+        const { documentVersionId, tabNumber } = data;
         const response = await this.fileProviderService.getAccessToFile(documentVersionId, tabNumber);
-        return {getAccessToFile: response}
+        return { getAccessToFile: response };
     }
 }

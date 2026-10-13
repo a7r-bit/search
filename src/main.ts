@@ -8,7 +8,7 @@ import { join } from 'path';
 import NestjsLoggerServiceAdapter from './infrastructure/logger/infrastructure/winston/nestjs/nestjsLoggerServiceAdapter';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, {bufferLogs:true, logger:false});
+    const app = await NestFactory.create(AppModule, { bufferLogs: true, logger: false });
 
     app.connectMicroservice<MicroserviceOptions>({
         transport: Transport.GRPC,
@@ -44,7 +44,6 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
 
     SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: '/docs-json' });
-
 
     await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

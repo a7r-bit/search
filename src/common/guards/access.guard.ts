@@ -32,8 +32,8 @@ export class AccessGuard implements CanActivate {
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
         private readonly userService: UserService,
-        @Inject(ContextStorageServiceKey) private readonly contextStorageService: ContextStorageService
-    ) { }
+        @Inject(ContextStorageServiceKey) private readonly contextStorageService: ContextStorageService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
@@ -72,10 +72,11 @@ export class AccessGuard implements CanActivate {
                     permissions: activeRole.permissions.flatMap((p) => p.name),
                 };
                 request.user = requestUser;
-                this.contextStorageService.set("user", {
+                this.contextStorageService.set('user', {
                     id: requestUser.id,
                     uidNumber: requestUser.uidNumber,
-                    activeRole: requestUser.activeRole,})
+                    activeRole: requestUser.activeRole,
+                });
 
                 if (!user.role.some((r) => r.id == activeRole.id)) {
                     throw new UnauthorizedException('Невалидные данные токена');
@@ -83,11 +84,7 @@ export class AccessGuard implements CanActivate {
 
                 return true;
             } catch (error) {
-                this.logger.warn(
-                    `Access denied: ${
-                        error instanceof Error ? error.message : 'unknown error'
-                    }`,
-                );
+                this.logger.warn(`Access denied: ${error instanceof Error ? error.message : 'unknown error'}`);
                 throw new UnauthorizedException('Невалидные данные токена');
             }
         }

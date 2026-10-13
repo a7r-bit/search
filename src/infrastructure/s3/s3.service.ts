@@ -29,8 +29,7 @@ export class S3Service {
         this.region = this.config.getOrThrow<string>('AWS_S3_REGION');
         this.endpoint = this.config.get<string>('AWS_S3_ENDPOINT') || undefined;
         this.forcePathStyle = (this.config.get<string>('AWS_S3_FORCE_PATH_STYLE') ?? 'false').toLowerCase() === 'true';
-        this.tlsRejectUnauthorized =
-            (this.config.get<string>('AWS_S3_TLS_REJECT_UNAUTHORIZED') ?? 'true').toLowerCase() !== 'false';
+        this.tlsRejectUnauthorized = (this.config.get<string>('AWS_S3_TLS_REJECT_UNAUTHORIZED') ?? 'true').toLowerCase() !== 'false';
         this.caBundlePath = this.config.get<string>('AWS_S3_CA_BUNDLE_PATH') || undefined;
 
         const httpsAgent = new https.Agent({
@@ -100,17 +99,17 @@ export class S3Service {
         return { url };
     }
 
-    async getFileBuffer(key:string):Promise<Buffer>{
+    async getFileBuffer(key: string): Promise<Buffer> {
         const command = new GetObjectCommand({
-            Bucket:this.bucket,
-            Key:key,
+            Bucket: this.bucket,
+            Key: key,
         });
         if (!(await this.checkFileExists(key))) {
             throw new NotFoundException('File not found');
         }
 
-        const response = await this.s3Client.send(command)
-        return Buffer.from(await response.Body?.transformToByteArray())
+        const response = await this.s3Client.send(command);
+        return Buffer.from(await response.Body?.transformToByteArray());
     }
 
     async deleteFile(key: string) {

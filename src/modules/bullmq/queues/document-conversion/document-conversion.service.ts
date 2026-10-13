@@ -7,13 +7,9 @@ import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
 export class DocumentConversionService {
     constructor(@InjectQueue('documentConversion') private documentConversionQueue: Queue) {}
     async addConversionJob(data: DocumentConversionJobDto) {
-        await this.documentConversionQueue.add(
-            'documentConversion',
-            data,
-            {
-                jobId: data.documentVersionId,
-                backoff: { type: 'exponential', delay: 5000 },
-            },
-        );
+        await this.documentConversionQueue.add('documentConversion', data, {
+            jobId: data.documentVersionId,
+            backoff: { type: 'exponential', delay: 5000 },
+        });
     }
 }

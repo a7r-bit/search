@@ -1,36 +1,42 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import Strategy from 'passport-ldapauth';
 import { ConfigService } from '@nestjs/config';
+import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import { LdapUserPayload } from './ldap.user.payload';
+import { LdapConfig } from './config/ldap-config.interface';
 
 @Injectable()
 export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
-    private readonly logger = new Logger(LdapStrategy.name);
-    constructor(private readonly config: ConfigService) {
-
-    const ldapUrl = `ldap://${config.get<string>('LDAP_HOST')}:${config.get<string>('LDAP_PORT')}`;
-    const searchBase = config.get<string>('LDAP_USERS_DN');
-    // Лог для отладки
-    console.log(`[LDAP] Connecting to: ${ldapUrl}`);
-    console.log(`[LDAP] SearchBase: "${searchBase}"`);
-    console.log(`[LDAP] Filter: (sAMAccountName={{username}})`);
-
+    constructor(
+        @Inject(LoggerKey) private logger: Logger,
+        private readonly config: ConfigService,
+    ) {
+        const ldapConfig: LdapConfig = {
+            host: config.get<string>('LDAP_HOST'),
+            port: config.get<number>('LDAP_PORT'),
+            adminDn: config.get<string>('LDAP_ADMIN_DN'),
+            adminPassword: config.get<string>('LDAP_ADMIN_PASSWORD'),
+            usersDn: config.get<string>('LDAP_USERS_DN'),
+            searchFilter: '(|(sAMAccountName={{username}})(uid={{username}}))',
+            tlsEnabled: config.get<boolean>('LDAP_TLS_ENABLED', false),
+        };
         super({
             server: {
-                url: `ldap://${config.get<string>('LDAP_HOST')}:${config.get<string>('LDAP_PORT')}`, bindDN: process.env.LDAP_ADMIN_DN,
-                bindCredentials: config.get<string>("LDAP_ADMIN_PASSWORD", ""),
-                searchBase: config.get<string>('LDAP_USERS_DN', ''),
-                // searchFilter: '(uid={{username})',
-                searchFilter: '(|(sAMAccountName={{username}})(uid={{username}}))'
+                url: `ldap://${ldapConfig.host}:${ldapConfig.port}`,
+                bindDN: ldapConfig.adminDn,
+                bindCredentials: ldapConfig.adminPassword,
+                searchBase: ldapConfig.usersDn,
+                searchFilter: ldapConfig.searchFilter,
             },
             usernameField: 'username',
             passwordField: 'password',
         });
     }
 
-    async validate(user: any) {
-        user.uidNumber = user.sAMAccountName
-        this.logger.log('LDAP successfull authentication for uidNumber: ' + user.uidNumber);
-        return user;
+    async validate(user: Record<string, unknown>): Promise<LdapUserPayload> {
+        const uidNumber = String(user.sAMAccountName ?? '');
+        this.logger.info('LDAP successfull authentication for uidNumber: ' + user.sAMAccountName);
+        return { ...user, uidNumber };
     }
 }

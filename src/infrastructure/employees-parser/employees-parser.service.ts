@@ -52,7 +52,7 @@ export class EmployeesParserService {
                 params: { page, limit, order_dir },
             });
             const departments = plainToInstance(DepartmentExternalDto, data.data as object[], { excludeExtraneousValues: true });
-            Logger.log("Departments length: ", departments.length);
+            Logger.log('Departments length: ', departments.length);
             return await this.getDepartmentArrayFromHierarchy(departments);
         } catch (e) {
             this.logger.error(`Error fetching departments list: ${e.message}`);

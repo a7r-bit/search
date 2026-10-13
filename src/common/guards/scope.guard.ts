@@ -13,7 +13,7 @@ import { RequestUser } from '../types/request-user';
 @Injectable()
 export class ScopeGuard implements CanActivate {
     private readonly logger = new Logger(ScopeGuard.name);
-    constructor(private reflector: Reflector) { }
+    constructor(private reflector: Reflector) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<{ user?: RequestUser }>();

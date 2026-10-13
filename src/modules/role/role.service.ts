@@ -3,13 +3,11 @@ import { PrismaService } from '../prisma';
 
 @Injectable()
 export class RoleService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async getRoles() {
         return await this.prisma.role.findMany();
     }
-
-
 
     async getRoleWithPermissions(roleName: string) {
         const role = await this.prisma.role.findUnique({

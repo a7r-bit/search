@@ -4,8 +4,3 @@ export enum AppRole {
     TECHNICIAN = 'Technician',
     USER = 'User',
 }
-
-export enum ElasticTypes {
-    Node = 'nodes',
-    DocumentVersion = 'document_versions',
-}

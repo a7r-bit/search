@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from './dto/update-document-version.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,20 +7,15 @@ import path from 'path';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { Prisma } from '@prisma/client';
-import { ElasticTypes } from '../../common/constants';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
-import { ElasticSearchProducer } from '../bullmq/queues/elasticsearch/elasticsearch.producer';
 import { S3Service } from '../../infrastructure/s3/s3.service';
-
 
 @Injectable()
 export class DocumentVersionService {
-    private logger = new Logger(DocumentVersionService.name);
     constructor(
         private readonly prisma: PrismaService,
         private readonly documentConversionService: DocumentConversionService,
-        private readonly esProducer: ElasticSearchProducer,
-        private readonly s3Service:S3Service
+        private readonly s3Service: S3Service,
     ) {}
 
     private normalizeUploadedFileName(fileName: string): string {
@@ -78,11 +73,7 @@ export class DocumentVersionService {
         return new DocumentVersionDto(foundVersion);
     }
 
-    async findByNodeId(
-        nodeId: string,
-        filterDto?: DocumentVersionFilterDto,
-        sort?: SortingParam,
-    ): Promise<DocumentVersionDto[]> {
+    async findByNodeId(nodeId: string, filterDto?: DocumentVersionFilterDto, sort?: SortingParam): Promise<DocumentVersionDto[]> {
         const { fileName, conversionStatus } = filterDto || {};
 
         const where: Prisma.DocumentVersionWhereInput = {
@@ -131,74 +122,33 @@ export class DocumentVersionService {
         // const savedDir = isPDF ? './uploads/converted' : './uploads/original';
 
         // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir);
-        const {key}  =await this.s3Service.uploadFile(file, 'original')
+        const { key } = await this.s3Service.uploadFile(file, 'original');
         const documentVersion = await this.prisma.$transaction(async (tx) => {
             const lastVersion = await this.getLastVersion(nodeId, tx);
             const newVersion = await tx.documentVersion.create({
-                data: { 
-                    nodeId, 
+                data: {
+                    nodeId,
                     version: lastVersion + 1,
                     conversionStatus: 'PENDING',
-                    mediaFile:
-                    {
-                        create:{
-                            filePath:key,
+                    mediaFile: {
+                        create: {
+                            filePath: key,
                             fileName: path.basename(normalizedFileName),
                             extention: ext,
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             });
-           
 
             return await tx.documentVersion.findUniqueOrThrow({
                 where: { id: newVersion.id },
                 include: { mediaFile: true },
             });
         });
-        await this.documentConversionService.addConversionJob({documentVersionId:documentVersion.id, key:key, isPDF});
+        await this.documentConversionService.addConversionJob({ documentVersionId: documentVersion.id, key: key, isPDF });
 
         return new DocumentVersionDto(documentVersion);
     }
-
-    // async createFromPath(createDocumentVersionDto: CreateDocumentVersionDto, filePath: string): Promise<DocumentVersionDto> {
-    //     const { nodeId } = createDocumentVersionDto;
-    //     const node = await this.prisma.node.findUnique({
-    //         where: { id: nodeId, type: 'DOCUMENT' },
-    //     });
-    //     if (!node) {
-    //         throw new NotFoundException('Родительский докумет не найден');
-    //     }
-
-    //     const ext = path.extname(filePath).toLocaleLowerCase();
-
-    //     const isPDF = ext == '.pdf';
-
-    //     const documentVersion = await this.prisma.$transaction(async (tx) => {
-    //         const lastVersion = await this.getLastVersion(nodeId, tx);
-
-    //         const newVersion = await tx.documentVersion.create({
-    //             data: { nodeId, version: lastVersion + 1, conversionStatus: 'PENDING' },
-    //         });
-
-    //         await tx.mediaFile.create({
-    //             data: {
-    //                 filePath: filePath,
-    //                 fileName: path.basename(filePath, ext),
-    //                 extention: ext,
-    //                 documentVersionId: newVersion.id,
-    //             },
-    //         });
-
-    //         return await tx.documentVersion.findUniqueOrThrow({
-    //             where: { id: newVersion.id },
-    //             include: { mediaFile: true },
-    //         });
-    //     });
-    //     await this.documentConversionService.addConversionJob(documentVersion.id, filePath, isPDF);
-
-    //     return new DocumentVersionDto(documentVersion);
-    // }
 
     async update(id: string, updateDocumentVersionDto: UpdateDocumentVersionDto): Promise<DocumentVersionDto> {
         const { version, fileName } = updateDocumentVersionDto;
@@ -242,13 +192,6 @@ export class DocumentVersionService {
             },
         });
 
-        await this.esProducer.updateAsync(ElasticTypes.DocumentVersion, updatedDocumentVersion.id, {
-            nodeId: updatedDocumentVersion.nodeId,
-            fileName: updatedDocumentVersion.mediaFile?.fileName,
-            path: '/' + updatedDocumentVersion.mediaFile?.filePath.replace(/\\/g, '/'),
-            version: updatedDocumentVersion.version,
-        });
-
         return new DocumentVersionDto(updatedDocumentVersion);
     }
 
@@ -259,9 +202,8 @@ export class DocumentVersionService {
             include: { mediaFile: true },
         });
         if (deletedDocument.mediaFile) {
-            await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath)
+            await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath);
         }
-        await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
     }
 
@@ -280,12 +222,7 @@ export class DocumentVersionService {
         });
         for (const doc of deletedDocuments) {
             if (doc.mediaFile) {
-                await this.s3Service.deleteFile(doc.mediaFile.filePath)
-            }
-            try {
-                await this.esProducer.deleteAsync(ElasticTypes.DocumentVersion, doc.id);
-            } catch (e) {
-                this.logger.error('Error deleting document from elastic', e);
+                await this.s3Service.deleteFile(doc.mediaFile.filePath);
             }
         }
 

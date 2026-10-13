@@ -1,12 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { S3Service } from "../../infrastructure/s3/s3.service";
-import { RpcException } from "@nestjs/microservices";
-import { status } from "@grpc/grpc-js";
-import { DocumentVersionService } from "../document-version/document-version.service";
-import { GetFileUrlResponse } from "./file-provider.controller";
-import { NodeService } from "../node";
-import { PoliticService } from "../politic";
-import { isUUID } from "class-validator";
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { S3Service } from '../../infrastructure/s3/s3.service';
+import { RpcException } from '@nestjs/microservices';
+import { status } from '@grpc/grpc-js';
+import { DocumentVersionService } from '../document-version/document-version.service';
+import { GetFileUrlResponse } from './file-provider.controller';
+import { NodeService } from '../node';
+import { PoliticService } from '../politic';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class FileProviderService {
@@ -14,36 +14,36 @@ export class FileProviderService {
         private readonly s3Service: S3Service,
         private readonly documentVersionService: DocumentVersionService,
         private readonly nodeService: NodeService,
-        private readonly politicService: PoliticService) {}
+        private readonly politicService: PoliticService,
+    ) {}
 
-    async getFileUrl(documentVersionId:string, expiresIn:number = 3600):Promise<GetFileUrlResponse> {
-     try{
-         const documentVersion = await this.documentVersionService.findOneById(documentVersionId);
-         Logger.log(documentVersion);
-         if(!documentVersion.mediaFile){
+    async getFileUrl(documentVersionId: string, expiresIn: number = 3600): Promise<GetFileUrlResponse> {
+        try {
+            const documentVersion = await this.documentVersionService.findOneById(documentVersionId);
+            Logger.log(documentVersion);
+            if (!documentVersion.mediaFile) {
+                throw new RpcException({
+                    status: status.NOT_FOUND,
+                    message: 'Media file not found',
+                });
+            }
+            const { url } = await this.s3Service.getFileUrl(documentVersion.mediaFile.fileUrl, expiresIn);
+            return { url, fileName: documentVersion.mediaFile.fileName, extention: documentVersion.mediaFile.extention };
+        } catch (error) {
             throw new RpcException({
-                code: status.NOT_FOUND,
-                message: 'Media file not found',
+                message: 'Failed to get file URL',
+                details: error instanceof Error ? error.message : 'Unknown error',
             });
-         }
-         const {url} = await this.s3Service.getFileUrl(documentVersion.mediaFile.fileUrl, expiresIn);
-         return {url, fileName: documentVersion.mediaFile.fileName, extention: documentVersion.mediaFile.extention};
-     } catch(error){
-        throw new RpcException({
-            code: status.INTERNAL,
-            message: 'Failed to get file URL',
-            details: error instanceof Error ? error.message : 'Unknown error',
-        })
-     }
+        }
     }
 
     async getAccessToFile(documentVersionId: string, tabNumber: string) {
         try {
             if (!isUUID(documentVersionId)) {
-               throw new RpcException({
-                code: status.INVALID_ARGUMENT,
-                message: 'Document version ID is invalid',
-               })
+                throw new RpcException({
+                    code: status.INVALID_ARGUMENT,
+                    message: 'Document version ID is invalid',
+                });
             }
             if (!tabNumber?.trim()) {
                 throw new RpcException({
@@ -86,4 +86,4 @@ export class FileProviderService {
             }
         }
     }
-    }
+}
