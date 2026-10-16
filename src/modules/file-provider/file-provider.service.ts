@@ -23,14 +23,18 @@ export class FileProviderService {
             Logger.log(documentVersion);
             if (!documentVersion.mediaFile) {
                 throw new RpcException({
-                    status: status.NOT_FOUND,
+                    code: status.NOT_FOUND,
                     message: 'Media file not found',
                 });
             }
             const { url } = await this.s3Service.getFileUrl(documentVersion.mediaFile.fileUrl, expiresIn);
             return { url, fileName: documentVersion.mediaFile.fileName, extention: documentVersion.mediaFile.extention };
         } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
             throw new RpcException({
+                code: status.INTERNAL,
                 message: 'Failed to get file URL',
                 details: error instanceof Error ? error.message : 'Unknown error',
             });
