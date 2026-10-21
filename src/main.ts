@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
@@ -20,7 +20,10 @@ async function bootstrap() {
     });
     await app.startAllMicroservices();
 
-    app.setGlobalPrefix('api');
+    // app.setGlobalPrefix('api');
+    app.setGlobalPrefix('api', {
+        exclude: [{ path: 'api/{*path}', method: RequestMethod.ALL }], // или 'api/{*path}'
+    });
 
     app.useGlobalPipes(new ValidationPipe({}));
     app.useLogger(app.get(NestjsLoggerServiceAdapter));

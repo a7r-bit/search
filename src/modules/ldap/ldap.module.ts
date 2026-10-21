@@ -29,9 +29,10 @@ export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
             searchFilter: requireEnv<string>(config, 'LDAP_SEARCH_FILTER'),
             tlsEnabled: config.get<boolean>('LDAP_TLS_ENABLED', false),
         };
+        logger.info(JSON.stringify(ldapConfig));
         super({
             server: {
-                url: `${ldapConfig.tlsEnabled ? 'ldaps:' : 'ldap:'}//${ldapConfig.host}:${ldapConfig.port}`,
+                url: `ldap://${ldapConfig.host}:${ldapConfig.port}`,
                 bindDN: ldapConfig.adminDn,
                 bindCredentials: ldapConfig.adminPassword,
                 searchBase: ldapConfig.usersDn,
@@ -40,6 +41,18 @@ export class LdapStrategy extends PassportStrategy(Strategy, 'ldap') {
             usernameField: 'username',
             passwordField: 'password',
         });
+        // super({
+        //     server: {
+        //         url: `ldap://${config.get<string>('LDAP_HOST')}:${config.get<string>('LDAP_PORT')}`,
+        //         bindDN: process.env.LDAP_ADMIN_DN,
+        //         bindCredentials: config.get<string>('LDAP_ADMIN_PASSWORD', ''),
+        //         searchBase: config.get<string>('LDAP_USERS_DN', ''),
+        //         // searchFilter: '(uid={{username})',
+        //         searchFilter: '(|(sAMAccountName={{username}})(uid={{username}}))',
+        //     },
+        //     usernameField: 'username',
+        //     passwordField: 'password',
+        // });
     }
 
     async validate(user: Record<string, unknown>): Promise<LdapUserPayload> {

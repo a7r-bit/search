@@ -10,7 +10,7 @@ export class UserExternalDto {
     @Expose()
     surname: string;
     @Expose()
-    mname: string;
+    lname: string;
     @Expose()
     @Type(() => DepartmentExternalDto)
     departments: DepartmentExternalDto[];
@@ -19,8 +19,11 @@ export class UserExternalDto {
 export class DepartmentExternalDto {
     @Expose()
     id: string;
+
     @Expose({ name: 'title' })
     name: string;
+
+    @Expose()
     @Type(() => DepartmentExternalDto)
     children?: DepartmentExternalDto[];
 }
