@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma';
 import { CreateGroupDTO } from './dto/create-group.dto';
 import { isUUID } from 'class-validator';
 import { Group, NodePermissionType, Prisma } from '@prisma/client';
-import { EmployeesParserService } from '../../infrastructure/employees-parser';
 import { toGroupDTO } from './dto/group-mapper';
 import { ListGroupQueryDto } from './dto/list-group-query.dto';
 import { PaginatedGroupResponseDto } from './dto/paginated-group-response.dto';
@@ -12,10 +11,7 @@ import { UpdateGroupsAccessesDTO } from './dto/update-group-access.dto';
 
 @Injectable()
 export class PoliticService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly employeesParserService: EmployeesParserService,
-    ) {}
+    constructor(private readonly prisma: PrismaService) {}
 
     async updateGroupsAccesses(nodeId: string, body: UpdateGroupsAccessesDTO): Promise<GroupWithAccessesDTO[]> {
         const node = await this.prisma.node.findUnique({ where: { id: nodeId } });
@@ -185,39 +181,39 @@ export class PoliticService {
         return this.checkUserToNodeAccess(userPolicies, node.parentId);
     }
 
-    async resolveNodePermissions(userGroups: string[], nodeId: string | null, visited = new Set<string>()): Promise<NodePermissionType[]> {
-        if (!nodeId) return [NodePermissionType.READ];
+    // async resolveNodePermissions(userGroups: string[], nodeId: string | null, visited = new Set<string>()): Promise<NodePermissionType[]> {
+    //     if (!nodeId) return [NodePermissionType.READ];
 
-        if (visited.has(nodeId)) {
-            return [NodePermissionType.READ];
-        }
-        visited.add(nodeId);
+    //     if (visited.has(nodeId)) {
+    //         return [NodePermissionType.READ];
+    //     }
+    //     visited.add(nodeId);
 
-        const node = await this.prisma.node.findUnique({
-            where: { id: nodeId },
-            select: {
-                parentId: true,
-                accesses: {
-                    select: {
-                        groupId: true,
-                        permissions: true,
-                    },
-                },
-            },
-        });
+    //     const node = await this.prisma.node.findUnique({
+    //         where: { id: nodeId },
+    //         select: {
+    //             parentId: true,
+    //             accesses: {
+    //                 select: {
+    //                     groupId: true,
+    //                     permissions: true,
+    //                 },
+    //             },
+    //         },
+    //     });
 
-        if (!node) return [NodePermissionType.READ];
+    //     if (!node) return [NodePermissionType.READ];
 
-        if (node.accesses.length > 0) {
-            const permissions = node.accesses
-                .filter((access) => userGroups.includes(access.groupId))
-                .flatMap((access) => access.permissions);
+    //     if (node.accesses.length > 0) {
+    //         const permissions = node.accesses
+    //             .filter((access) => userGroups.includes(access.groupId))
+    //             .flatMap((access) => access.permissions);
 
-            return [...new Set(permissions)];
-        }
+    //         return [...new Set(permissions)];
+    //     }
 
-        return this.resolveNodePermissions(userGroups, node.parentId, visited);
-    }
+    //     return this.resolveNodePermissions(userGroups, node.parentId, visited);
+    // }
 
     async createGroup(createDTO: CreateGroupDTO) {
         const isUnique = await this.isUnique(createDTO.name);
@@ -235,15 +231,15 @@ export class PoliticService {
         return await this.prisma.group.delete({ where: { id: groupId } });
     }
 
-    async hasAdminOnNode(userGroups: string[], nodeId: string): Promise<boolean> {
-        if (!isUUID(nodeId)) return false;
-        return await this.hasNodePermission(userGroups, nodeId, NodePermissionType.ADMIN);
-    }
+    // async hasAdminOnNode(userGroups: string[], nodeId: string): Promise<boolean> {
+    //     if (!isUUID(nodeId)) return false;
+    //     return await this.hasNodePermission(userGroups, nodeId, NodePermissionType.ADMIN);
+    // }
 
-    private async hasNodePermission(userGroups: string[], nodeId: string, permission: NodePermissionType): Promise<boolean> {
-        const permissions = await this.resolveNodePermissions(userGroups, nodeId);
-        return permissions.includes(permission);
-    }
+    // private async hasNodePermission(userGroups: string[], nodeId: string, permission: NodePermissionType): Promise<boolean> {
+    //     const permissions = await this.resolveNodePermissions(userGroups, nodeId);
+    //     return permissions.includes(permission);
+    // }
 
     private async isUnique(name: string) {
         const group = await this.prisma.group.findUnique({

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, IsUUID } from 'class-validator';
 
 export class UpdateNodeDto {
     @ApiProperty({ description: 'Название Node', nullable: true })
@@ -14,4 +14,10 @@ export class UpdateNodeDto {
     @IsString()
     @MaxLength(2000)
     description?: string | null;
+
+    @ApiProperty({ description: 'UUID родителя', nullable: true })
+    @IsOptional()
+    @IsString()
+    @IsUUID()
+    parentId?: string;
 }

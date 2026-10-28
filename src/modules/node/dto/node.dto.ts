@@ -20,3 +20,8 @@ export class NodeDto {
     @ApiProperty()
     updatedAt: Date;
 }
+
+export class NodeWithChildrens extends NodeDto {
+    @ApiProperty({ isArray: true })
+    children: NodeDto[];
+}

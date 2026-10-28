@@ -1,183 +1,113 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
-import { CreateNodeDto } from './dto/create-node.dto';
-import { UpdateNodeDto } from './dto/update-node.dto';
 import { toNodeDto } from './dto/node-dto.mapper';
 import { NodeDto } from './dto/node.dto';
-import { PrismaService } from '../prisma';
 import { DocumentVersionService } from '../document-version';
-import { SortingParam } from '../../common/decorators/sorting-params.decorator';
-import { PathPart } from '../../common/types/path-part.dto';
+import { CreateNodeDto, ListNodesQueryDto, UpdateNodeDto } from './dto';
+import { NodeRepository } from './node.repository';
+import { NodeTreeRepository } from './node-tree.repository';
 import { NodePermissionType, NodeType } from '@prisma/client';
-import { ListNodesQueryDto } from './dto';
-import { PoliticService } from '../politic/politic.service';
 import { RequestUser } from '../../common/types/request-user';
+import { SortingParam } from '../../common/decorators/sorting-params.decorator';
 import { TreeItemDto } from './dto/tree-item.dto';
+import { PermissionResolverService } from '../access-control/resolver.service';
+import { PathPart } from '../../common/types/path-part.dto';
 
 @Injectable()
 export class NodeService {
     constructor(
-        private readonly prisma: PrismaService,
         private readonly documentVersionService: DocumentVersionService,
-        private readonly politicService: PoliticService,
+        // New services
+        private readonly nodeRepository: NodeRepository,
+        private readonly nodeTreeRepository: NodeTreeRepository,
+        private readonly permissionResolverService: PermissionResolverService,
     ) {}
 
-    async create(dto: CreateNodeDto): Promise<NodeDto> {
-        await this.validateParent(dto.parentId ?? null);
-        await this.isUnique(dto.name, dto.type, dto.parentId ?? null);
-        const created = await this.prisma.node.create({
-            data: {
-                name: dto.name,
-                type: dto.type,
-                parentId: dto.parentId ?? null,
-                description: dto.description ?? null,
-            },
-        });
+    async getPath(id: string): Promise<PathPart[]> {
+        return await this.nodeTreeRepository.getPath(id);
+    }
+    async findById(id: string): Promise<NodeDto> {
+        return await this.nodeRepository.findByIdOrThrow(id);
+    }
 
+    async create(dto: CreateNodeDto): Promise<NodeDto> {
+        await this.nodeTreeRepository.validateParent(dto.parentId ?? null);
+        await this.isUnique(dto.name, dto.type, dto.parentId ?? null);
+        const created = await this.nodeRepository.create(dto);
         return toNodeDto(created);
     }
 
-    async findById(id: string): Promise<NodeDto> {
-        const node = await this.prisma.node.findUnique({ where: { id } });
-        if (!node) {
-            throw new NotFoundException(`Директория не найдена`);
-        }
-        return toNodeDto(node);
-    }
-
-    async getPath(id: string | null): Promise<PathPart[]> {
-        const parts: PathPart[] = [];
-
-        let currentId = id;
-
-        while (currentId) {
-            const node = await this.prisma.node.findUnique({
-                where: { id: currentId },
-                select: { id: true, name: true, parentId: true },
-            });
-
-            if (!node) break;
-
-            parts.unshift({ id: node.id, name: node.name });
-            currentId = node.parentId;
-        }
-
-        return parts;
-    }
-
-    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort?: SortingParam): Promise<TreeItemDto[]> {
-        const { parentId, type } = query;
-
+    async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort: SortingParam): Promise<TreeItemDto[]> {
+        const nodes = await this.nodeRepository.listChildren(query, sort);
         const isOwner = userReq.activeRole === 'Owner';
 
-        const nodes = await this.prisma.node.findMany({
-            where: {
-                parentId: parentId ? parentId : null,
-                ...(type && { type }),
-            },
-            include: {
-                _count: { select: { children: true } },
-                documentVersions: {
-                    take: 1,
-                    orderBy: { version: 'desc' },
-                    include: { mediaFile: true },
-                },
-            },
-            orderBy: sort ? { [sort.property]: sort.direction } : { createdAt: 'desc' },
-        });
+        const childrenWithPermissions = await Promise.all(
+            nodes.map(async (node) => {
+                const permissions = isOwner
+                    ? Object.values(NodePermissionType)
+                    : await this.permissionResolverService.resolveNodePermissions(userReq.politicGroups, node.id);
+                return { ...node, permissions };
+            }),
+        );
 
-        const result: TreeItemDto[] = [];
-        for (const node of nodes) {
-            const permissions = isOwner
-                ? Object.values(NodePermissionType)
-                : await this.politicService.resolveNodePermissions(userReq.politicGroups, node.id);
+        return childrenWithPermissions.map((node) => this.mapToTreeItemDto(node));
+    }
 
-            const latest = node.documentVersions[0] ?? null;
-            const isDirectory = node.type === NodeType.DIRECTORY;
+    private mapToTreeItemDto(node: any): TreeItemDto {
+        const latest = node.documentVersions?.[0] ?? null;
+        const isDirectory = node.type === NodeType.DIRECTORY;
 
-            result.push({
-                id: node.id,
-                parentId: node.parentId ?? null,
-                kind: isDirectory ? 'directory' : 'file',
-                name: latest?.mediaFile?.fileName ?? node.name,
-                hasChildren: isDirectory ? node._count.children > 0 : false,
-                permissions,
-                document: latest
-                    ? {
-                          latestVersionId: latest.id,
-                          version: latest.version,
-                          fileName: latest.mediaFile?.fileName,
-                          fileUrl: latest.mediaFile?.filePath,
-                          conversionStatus: latest.conversionStatus,
-                          updatedAt: latest.updatedAt,
-                      }
-                    : null,
-            });
-        }
-
-        return result;
+        return {
+            id: node.id,
+            parentId: node.parentId ?? null,
+            kind: isDirectory ? 'directory' : 'file',
+            name: latest?.mediaFile?.fileName ?? node.name,
+            hasChildren: isDirectory ? node._count.children > 0 : false,
+            permissions: node.permissions,
+            document: latest
+                ? {
+                      latestVersionId: latest.id,
+                      version: latest.version,
+                      fileName: latest.mediaFile?.fileName,
+                      fileUrl: latest.mediaFile?.filePath,
+                      conversionStatus: latest.conversionStatus,
+                      updatedAt: latest.updatedAt,
+                  }
+                : null,
+        };
     }
 
     async update(id: string, dto: UpdateNodeDto): Promise<NodeDto> {
-        const node = await this.prisma.node.findUnique({
-            where: { id },
-        });
+        const node = await this.nodeRepository.findByIdOrThrow(id);
         if (dto.name) {
             await this.isUnique(dto.name, node.type, node.parentId);
         }
-        if (!node) throw new NotFoundException('Директория не найдена');
 
-        const updated = await this.prisma.node.update({
-            where: { id },
-            data: {
-                name: dto.name,
-                description: dto.description,
-            },
-        });
-
+        const updated = await this.nodeRepository.update(id, { name: dto.name, description: dto.description });
         return toNodeDto(updated);
     }
 
     async move(id: string, newParentId: string | null): Promise<NodeDto> {
-        const node = await this.prisma.node.findUnique({
-            where: { id },
-        });
+        await this.nodeRepository.findByIdOrThrow(id);
+        await this.nodeTreeRepository.validateParent(newParentId);
 
-        if (!node) throw new NotFoundException('Директория не найдена');
+        if (newParentId === id) throw new BadRequestException('Нельзя переместить в себя');
 
-        if (newParentId === id) {
-            throw new BadRequestException('Нельзя переместить в себя');
+        if (newParentId && (await this.nodeTreeRepository.isDescendant(newParentId, id))) {
+            throw new BadRequestException('Нельзя переместить директорию в свою же поддиректорию');
         }
 
-        await this.validateParent(newParentId);
-
-        if (newParentId) {
-            const isDescendant = await this.isDescendant(newParentId, id);
-
-            if (isDescendant) {
-                throw new BadRequestException('Нельзя переместить директорию в свою же поддиректорию');
-            }
-        }
-
-        const moved = await this.prisma.node.update({
-            where: { id },
-            data: { parentId: newParentId },
-        });
+        const moved = await this.nodeRepository.update(id, { parentId: newParentId });
 
         return toNodeDto(moved);
     }
 
     async delete(id: string) {
-        const node = await this.prisma.node.findUnique({
-            where: { id },
-            include: { children: true },
-        });
+        const node = await this.nodeRepository.findWithChildren(id);
         if (!node) {
             throw new NotFoundException(`Директория с id: ${id} не найдена`);
         }
 
-        for (const childNode of node.children) {
-            await this.delete(childNode.id);
-        }
+        await this.nodeTreeRepository.recursiveDelete(id);
 
         switch (node.type) {
             case 'DIRECTORY':
@@ -193,72 +123,16 @@ export class NodeService {
                 throw new NotImplementedException(`Удаление для Node типа: ${node.type} сущностей не реализованно`);
         }
 
-        const deleteNode = await this.prisma.node.delete({ where: { id } });
+        // const deleteNode = await this.prisma.node.delete({ where: { id } });
+        const deleteNode = await this.nodeRepository.delete(id);
         return toNodeDto(deleteNode);
     }
-    async getDescendantIds(nodeId: string): Promise<string[]> {
-        const descendants: { id: string }[] = await this.prisma.$queryRaw`
-        WITH RECURSIVE r AS (
-        SELECT id FROM nodes WHERE id = ${nodeId}::uuid
-        UNION ALL
-        SELECT n.id
-        FROM nodes n
-        INNER JOIN r ON n.parent_id = r.id
-        )
-        SELECT id FROM r;
-        `;
-        return descendants.map((descendant: { id: string }) => descendant.id);
-    }
 
-    /**
-     *  helpers
-     */
-
-    // private async isUnique(dto: CreateNodeDto) {
     private async isUnique(name: string, type: NodeType, parentId: string | null) {
-        const existing = await this.prisma.node.findFirst({
-            where: {
-                name: name,
-                type: type,
-                parentId: parentId ? parentId : { equals: null },
-            },
-            select: { id: true },
-        });
+        const existing = await this.nodeRepository.isUnique(name, type, parentId);
 
         if (existing) {
             throw new BadRequestException(`В текущей дикеткории уже существоет элемент с название: ${name}`);
-        }
-    }
-
-    private async isDescendant(candidateId: string, ancestorId: string): Promise<boolean> {
-        let currentId: string | null = candidateId;
-        const visited = new Set<string>();
-        while (currentId) {
-            if (currentId === ancestorId) return true;
-
-            if (visited.has(currentId)) break;
-            visited.add(currentId);
-
-            const current = await this.prisma.node.findUnique({
-                where: { id: currentId },
-                select: { parentId: true },
-            });
-            currentId = current?.parentId ?? null;
-        }
-        return false;
-    }
-
-    private async validateParent(parentId: string | null) {
-        if (!parentId) return;
-        const parent = await this.prisma.node.findUnique({
-            where: { id: parentId },
-            select: { id: true, type: true },
-        });
-        if (!parent) {
-            throw new NotFoundException('Родительская директория не найдена');
-        }
-        if (parent.type !== NodeType.DIRECTORY) {
-            throw new BadRequestException(`Родительская директория должна быть типа ${NodeType.DIRECTORY}`);
         }
     }
 }
