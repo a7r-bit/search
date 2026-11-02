@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { NodeRepository } from './node.repository';
 import { PrismaService } from '../prisma';
 import { NodeType } from '@prisma/client';
 import { PathPart } from '../../common/types/path-part.dto';
@@ -7,13 +6,14 @@ import { PathPart } from '../../common/types/path-part.dto';
 @Injectable()
 export class NodeTreeRepository {
     constructor(
-        private readonly nodeRepository: NodeRepository,
         private readonly prisma: PrismaService,
     ) {}
 
     async recursiveDelete(id: string) {
         const descendantsId = await this.getDescendantIds(id);
-        return await this.nodeRepository.deleteMany(descendantsId);
+        return await this.prisma.node.deleteMany({
+            where: { id: { in: descendantsId } },
+        });
     }
 
     async getDescendantIds(nodeId: string): Promise<string[]> {
@@ -48,8 +48,16 @@ export class NodeTreeRepository {
     }
 
     async getParent(nodeId: string) {
-        const currentNode = await this.nodeRepository.findById(nodeId);
-        return await this.nodeRepository.findById(currentNode.parentId);
+        const currentNode = await this.prisma.node.findUnique({
+            where: { id: nodeId },
+            select: { parentId: true },
+        });
+
+        if (!currentNode || !currentNode.parentId) return null;
+
+        return await this.prisma.node.findUnique({
+            where: { id: currentNode.parentId },
+        });
     }
 
     async isDescendant(candidateId: string, ancestorId: string): Promise<boolean> {
@@ -74,17 +82,19 @@ export class NodeTreeRepository {
         return result[0]?.exists ?? false;
     }
 
-    async validateParent(parentId: string | null) {
+    async validateParent(parentId: string | null): Promise<{ isValid: boolean; error?: string }> {
         if (!parentId) return;
         const parent = await this.prisma.node.findUnique({
             where: { id: parentId },
             select: { id: true, type: true },
         });
-        if (!parent) {
-            throw new NotFoundException('Родительская директория не найдена');
-        }
+
         if (parent.type !== NodeType.DIRECTORY) {
-            throw new BadRequestException(`Родительская директория должна быть типа ${NodeType.DIRECTORY}`);
+            return { isValid: false, error: 'Родительская директория должна быть типа ' + NodeType.DIRECTORY };
         }
+
+        return {
+            isValid: true,
+        };
     }
 }

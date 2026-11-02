@@ -30,7 +30,8 @@ export class NodeService {
     }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
-        await this.nodeTreeRepository.validateParent(dto.parentId ?? null);
+        const validateObj = await this.nodeTreeRepository.validateParent(dto.parentId ?? null);
+        if (!validateObj.isValid) throw new BadRequestException(validateObj.error);
         await this.isUnique(dto.name, dto.type, dto.parentId ?? null);
         const created = await this.nodeRepository.create(dto);
         return toNodeDto(created);
@@ -88,7 +89,8 @@ export class NodeService {
 
     async move(id: string, newParentId: string | null): Promise<NodeDto> {
         await this.nodeRepository.findByIdOrThrow(id);
-        await this.nodeTreeRepository.validateParent(newParentId);
+        const validateObj = await this.nodeTreeRepository.validateParent(newParentId);
+        if (!validateObj.isValid) throw new BadRequestException(validateObj.error);
 
         if (newParentId === id) throw new BadRequestException('Нельзя переместить в себя');
 

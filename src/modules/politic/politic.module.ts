@@ -7,7 +7,7 @@ import { NodeAdminGuard } from '../../common/guards/node-admin.guard';
 @Module({
     imports: [EmployeesParserModule],
     controllers: [PoliticController],
-    providers: [PoliticService, NodeAdminGuard],
+    providers: [PoliticService],
     exports: [PoliticService],
 })
 export class PoliticModule {}

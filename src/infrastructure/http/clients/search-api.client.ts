@@ -17,16 +17,13 @@ export class SearchApiClient {
         if (!this.baseUrl || !this.tenantId) {
             throw new Error('SEARCH_SERVICE_URL and SEARCH_TENANT_ID must be defined in the environment');
         }
+
         this.client = axios.create({
             baseURL: this.config.get<string>('SEARCH_SERVICE_URL'),
             headers: {
                 'x-tenant-id': this.tenantId,
             },
         });
-
-        if (!this.config.get<string>('SEARCH_SERVICE_URL')) {
-            throw new Error('SEARCH_SERVICE_URL must be defined in the environment');
-        }
     }
 
     async search(query: SearchQuery): Promise<SearchResult> {

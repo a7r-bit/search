@@ -1,14 +1,17 @@
 import { Request } from 'express';
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { AppRole } from '../constants';
 import { RequestUser } from '../types/request-user';
-import { PoliticService } from '../../modules/politic/politic.service';
+import { PermissionResolverService } from '../../modules/access-control/resolver.service';
+import { NodePermissionType } from '@prisma/client';
+import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 
 @Injectable()
 export class NodeAdminGuard implements CanActivate {
-    private readonly logger = new Logger(NodeAdminGuard.name);
-
-    constructor(private readonly politicService: PoliticService) {}
+    constructor(
+        @Inject(LoggerKey) private readonly logger: Logger,
+        private readonly permissionResolverService: PermissionResolverService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         this.logger.debug('NodeAdminGuard');
@@ -18,8 +21,8 @@ export class NodeAdminGuard implements CanActivate {
         if (request.user?.activeRole === AppRole.OWNER) return true;
 
         const nodeId = (request.params.nodeId ?? request.query.nodeId) as string;
-
-        const hasAdmin = await this.politicService.hasAdminOnNode(request.user?.politicGroups ?? [], nodeId);
+        const permissions = await this.permissionResolverService.resolveNodePermissions(request.user?.politicGroups ?? [], nodeId);
+        const hasAdmin = permissions.includes(NodePermissionType.ADMIN);
 
         if (hasAdmin) return true;
 

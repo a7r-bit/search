@@ -3,5 +3,5 @@ import { SearchService } from './search.service';
 
 @Controller('search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+    constructor(private readonly searchService: SearchService) {}
 }

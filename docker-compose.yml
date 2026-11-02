@@ -100,4 +100,3 @@ volumes:
 
 networks:
     search_network:
-        external: true

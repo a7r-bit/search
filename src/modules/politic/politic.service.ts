@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma';
 import { CreateGroupDTO } from './dto/create-group.dto';
 import { isUUID } from 'class-validator';
-import { Group, NodePermissionType, Prisma } from '@prisma/client';
+import { Group, Prisma } from '@prisma/client';
 import { toGroupDTO } from './dto/group-mapper';
 import { ListGroupQueryDto } from './dto/list-group-query.dto';
 import { PaginatedGroupResponseDto } from './dto/paginated-group-response.dto';
@@ -180,40 +180,6 @@ export class PoliticService {
 
         return this.checkUserToNodeAccess(userPolicies, node.parentId);
     }
-
-    // async resolveNodePermissions(userGroups: string[], nodeId: string | null, visited = new Set<string>()): Promise<NodePermissionType[]> {
-    //     if (!nodeId) return [NodePermissionType.READ];
-
-    //     if (visited.has(nodeId)) {
-    //         return [NodePermissionType.READ];
-    //     }
-    //     visited.add(nodeId);
-
-    //     const node = await this.prisma.node.findUnique({
-    //         where: { id: nodeId },
-    //         select: {
-    //             parentId: true,
-    //             accesses: {
-    //                 select: {
-    //                     groupId: true,
-    //                     permissions: true,
-    //                 },
-    //             },
-    //         },
-    //     });
-
-    //     if (!node) return [NodePermissionType.READ];
-
-    //     if (node.accesses.length > 0) {
-    //         const permissions = node.accesses
-    //             .filter((access) => userGroups.includes(access.groupId))
-    //             .flatMap((access) => access.permissions);
-
-    //         return [...new Set(permissions)];
-    //     }
-
-    //     return this.resolveNodePermissions(userGroups, node.parentId, visited);
-    // }
 
     async createGroup(createDTO: CreateGroupDTO) {
         const isUnique = await this.isUnique(createDTO.name);

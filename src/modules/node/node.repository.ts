@@ -1,11 +1,9 @@
-import { Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
 import { CreateNodeDto, ListNodesQueryDto, UpdateNodeDto } from './dto';
 import { NodeWithChildrens } from './dto/node.dto';
-import { Node, NodePermissionType, NodeType, Prisma } from '@prisma/client';
-import { RequestUser } from '../../common/types/request-user';
+import { Node, NodeType, Prisma } from '@prisma/client';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';
-import { TreeItemDto } from './dto/tree-item.dto';
 
 @Injectable()
 export class NodeRepository {

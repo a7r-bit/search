@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
-import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import NestjsLoggerServiceAdapter from './infrastructure/logger/infrastructure/winston/nestjs/nestjsLoggerServiceAdapter';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, { bufferLogs: true, logger: false });
+    const app = await NestFactory.create(AppModule /*{ bufferLogs: true, logger: false }*/);
+    // app.useLogger(app.get(NestjsLoggerServiceAdapter));
 
     app.connectMicroservice<MicroserviceOptions>({
         transport: Transport.GRPC,
@@ -26,7 +26,6 @@ async function bootstrap() {
     });
 
     app.useGlobalPipes(new ValidationPipe({}));
-    app.useLogger(app.get(NestjsLoggerServiceAdapter));
 
     app.enableCors();
 

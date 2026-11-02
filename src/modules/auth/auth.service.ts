@@ -23,9 +23,7 @@ export class AuthService {
         const reqUser: RequestUser = req.user;
 
         const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
-        this.logger.info('externalPoliticGroups', { props: userExternal });
         const externalPoliticGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
-        this.logger.debug('externalPoliticGroups', { props: externalPoliticGroups });
         const user = await this.prisma.user.upsert({
             where: { uidNumber: userExternal.ldap_tab_num },
             create: {
