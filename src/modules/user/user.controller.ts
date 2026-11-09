@@ -1,9 +1,10 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { FindUserQueryDto, UserDTO } from './dto';
-import { UserMapper } from './mappers';
+import { FindUserQueryDto } from './dto/find-user-query.dto';
+import { UserDTO } from './dto/user.dto';
+import { UserMapper } from './mappers/user.mapper';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { CustomParseUUIDPipe } from '../../common/pipes';
+import { CustomParseUUIDPipe } from '../../common/pipes/custom-parse-uuid.pipe';
 import { Scope } from '../../common/decorators/scope.decorator';
 @Controller('users')
 export class UserController {

@@ -6,7 +6,6 @@ import NestjsLoggerServiceAdapter from './nestjsLoggerServiceAdapter';
 import { ConfigService } from '@nestjs/config';
 import ConsoleTransport from '../transport/consoleTransport';
 import morgan from 'morgan';
-import FileTransport from '../transport/fileTransport';
 
 @Global()
 @Module({

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
-import { plainToInstance } from 'class-transformer';
 import * as http from 'http';
 import * as https from 'https';
-import { DepartmentExternalDto, UserExternalDto } from '../../employees-parser';
+import { DepartmentExternalDto } from '../../employees-parser/dto/user-external.dto';
 
 @Injectable()
 export class EmployeesApiClient {

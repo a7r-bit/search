@@ -1,6 +1,6 @@
 import { Controller, Post, UseGuards } from '@nestjs/common';
 import { SyncService } from './sync.service';
-import { Role } from '../../common/decorators';
+import { Role } from '../../common/decorators/role.decorator';
 import { AppRole } from '../../common/constants';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/role.guard';

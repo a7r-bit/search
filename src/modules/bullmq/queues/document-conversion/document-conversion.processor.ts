@@ -37,7 +37,6 @@ export class DocumentConversionProcessor extends WorkerHost {
         const fileName = path.basename(key);
         const pdfBuffer: Buffer = isPDF ? fileBuffer : await this.gotenbergService.convertDocxToPdf(fileBuffer, fileName);
         const { key: outputKey } = await this.s3Service.uploadBufferAsPdf(pdfBuffer, 'converted');
-        const text = await this.pdfService.extractTextFromPdfByBuffer(pdfBuffer);
 
         await this.prisma.mediaFile.update({
             where: { id: mediaFile.id },
@@ -46,9 +45,8 @@ export class DocumentConversionProcessor extends WorkerHost {
                 extention: 'pdf',
             },
         });
-        const documentVersion = await this.prisma.documentVersion.update({
+        await this.prisma.documentVersion.update({
             where: { id: documentVersionId },
-            include: { mediaFile: true },
             data: { conversionStatus: 'DONE' },
         });
 

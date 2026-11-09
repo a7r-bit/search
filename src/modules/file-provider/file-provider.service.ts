@@ -3,9 +3,9 @@ import { S3Service } from '../../infrastructure/s3/s3.service';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import { DocumentVersionService } from '../document-version/document-version.service';
-import { GetFileUrlResponse } from './file-provider.controller';
-import { NodeService } from '../node';
-import { PoliticService } from '../politic';
+import { GetFileUrlResponse } from './file-provider.dto';
+import { NodeService } from '../node/node.service';
+import { PoliticService } from '../politic/politic.service';
 import { isUUID } from 'class-validator';
 
 @Injectable()

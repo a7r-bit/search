@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
 import { toNodeDto } from './dto/node-dto.mapper';
 import { NodeDto } from './dto/node.dto';
-import { DocumentVersionService } from '../document-version';
-import { CreateNodeDto, ListNodesQueryDto, UpdateNodeDto } from './dto';
+import { DocumentVersionService } from '../document-version/document-version.service';
+import { CreateNodeDto } from './dto/create-node.dto';
+import { ListNodesQueryDto } from './dto/list-nodes.query';
+import { UpdateNodeDto } from './dto/update-node.dto';
 import { NodeRepository } from './node.repository';
 import { NodeTreeRepository } from './node-tree.repository';
 import { NodePermissionType, NodeType } from '@prisma/client';

@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException, ParseUUIDPipe } from '@nestjs/common';
+import { BadRequestException, ParseUUIDPipe } from '@nestjs/common';
 
 export class CustomParseUUIDPipe extends ParseUUIDPipe {
     constructor() {

@@ -2,10 +2,10 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { DocumentConversionProcessor } from './queues/document-conversion/document-conversion.processor';
 import { DocumentConversionService } from './queues/document-conversion/document-conversion.service';
-import { GotenbergModule } from '../gotenberg';
-import { PdfModule } from '../pdf';
+import { GotenbergModule } from '../gotenberg/gotenberg.module';
+import { PdfModule } from '../pdf/pdf.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { S3Module } from '../../infrastructure/s3';
+import { S3Module } from '../../infrastructure/s3/s3.module';
 
 @Module({
     imports: [

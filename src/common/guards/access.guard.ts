@@ -3,7 +3,7 @@ import { Request } from 'express';
 import { TokenService } from '../../modules/token/token.service';
 import { RoleService } from '../../modules/role/role.service';
 import { UserService } from '../../modules/user/user.service';
-import { PayloadDTO } from '../../modules/token';
+import { PayloadDTO } from '../../modules/token/dto/payload.dto';
 import { RequestUser } from '../types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';

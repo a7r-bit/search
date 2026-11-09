@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NodeTreeRepository } from '../node/node-tree.repository';
-import { PrismaService } from '../prisma';
+import { PrismaService } from '../prisma/prisma.service';
 import { NodePermissionType } from '@prisma/client';
 
 @Injectable()

@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AppRole } from '../constants';
-import { SCOPE_KEY } from '../decorators';
+import { SCOPE_KEY } from '../decorators/scope.decorator';
 import { RequestUser } from '../types/request-user';
 /*
  *   Проверка доступа к контроллеру

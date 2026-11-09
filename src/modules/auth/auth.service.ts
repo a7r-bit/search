@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { RoleService } from '../role';
-import { PayloadDTO, TokenService } from '../token';
+import { RoleService } from '../role/role.service';
+import { PayloadDTO } from '../token/dto/payload.dto';
+import { TokenService } from '../token/token.service';
 import { PoliticService } from '../politic/politic.service';
-import { EmployeesParserService } from '../../infrastructure/employees-parser';
+import { EmployeesParserService } from '../../infrastructure/employees-parser/employees-parser.service';
 import { UserProvisioningService } from '../../user-provisioning/user-provisioning.service';
 import { RequestUser } from '../../common/types/request-user';
 import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';

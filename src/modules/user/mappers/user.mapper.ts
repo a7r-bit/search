@@ -1,5 +1,5 @@
 import { UserDTO } from '../dto/user.dto';
-import { UserWithRoles } from '../types';
+import { UserWithRoles } from '../types/user.types';
 
 export class UserMapper {
     static toUserDTO(user: UserWithRoles): UserDTO {

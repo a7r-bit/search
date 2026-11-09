@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma';
-import { toNodeDto } from '../node/dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { toNodeDto } from '../node/dto/node-dto.mapper';
 @Injectable()
 export class LikedNodeService {
     constructor(private readonly prisma: PrismaService) {}

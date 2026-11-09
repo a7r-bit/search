@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { BullmqModule } from '../bullmq';
+import { BullmqModule } from '../bullmq/bullmq.module';
 import { DocumentVersionController } from './document-version.controller';
 import { DocumentVersionService } from './document-version.service';
-import { S3Module } from '../../infrastructure/s3';
+import { S3Module } from '../../infrastructure/s3/s3.module';
 
 @Module({
     imports: [BullmqModule, S3Module],

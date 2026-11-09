@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma';
-import { CreateNodeDto, ListNodesQueryDto, UpdateNodeDto } from './dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateNodeDto } from './dto/create-node.dto';
+import { ListNodesQueryDto } from './dto/list-nodes.query';
+import { UpdateNodeDto } from './dto/update-node.dto';
 import { NodeWithChildrens } from './dto/node.dto';
 import { Node, NodeType, Prisma } from '@prisma/client';
 import { SortingParam } from '../../common/decorators/sorting-params.decorator';

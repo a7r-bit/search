@@ -14,7 +14,7 @@ import { SignInUserResponse } from './dto/sign_in_user.dto';
 import { SignInDto } from './dto/sign_in.dto';
 import { LdapAuthGuard } from '../../common/guards/ldap-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
-import { UserDTO } from '../user';
+import { UserDTO } from '../user/dto/user.dto';
 import { SwitchRoleDto } from './dto/switch-role.dto';
 
 @Controller('auth')

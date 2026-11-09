@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmployeesParserService } from '../../infrastructure';
-import { PoliticService } from '../politic';
-import { PrismaService } from '../prisma';
+import { EmployeesParserService } from '../../infrastructure/employees-parser/employees-parser.service';
+import { PoliticService } from '../politic/politic.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { UserProvisioningService } from '../../user-provisioning/user-provisioning.service';
 
 @Injectable()

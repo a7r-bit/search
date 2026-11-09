@@ -32,7 +32,8 @@ import {
 import { DocumentVersionSortParamsEnum } from './dto/document_version_sort_params_enum.dto';
 import { DocumentVersionFilterDto } from './dto/document_version_filter_dto ';
 import { ApiSortingQuery } from '../../common/decorators/sorting-params-swagger.decorator';
-import { CustomFileTypeValidator, CustomParseUUIDPipe } from '../../common/pipes';
+import { CustomFileTypeValidator } from '../../common/pipes/file-type-validator.pipe';
+import { CustomParseUUIDPipe } from '../../common/pipes/custom-parse-uuid.pipe';
 import { SortingParam, SortingParams } from '../../common/decorators/sorting-params.decorator';
 @ApiBearerAuth('access-token')
 @Controller('document-versions')
