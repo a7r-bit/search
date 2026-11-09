@@ -14,7 +14,7 @@ export class UserController {
     @ApiOkResponse({ type: UserDTO, isArray: true, description: 'Успешное получение' })
     @Scope('client:read')
     async findAll(@Query() query: FindUserQueryDto) {
-        const users = await this.userService.findAll(query);
+        const users = await this.userService.findAll();
         return users.map((user) => UserMapper.toUserDTO(user as any));
     }
 
@@ -42,8 +42,9 @@ export class UserController {
         },
     })
     async findOne(@Param('id', new CustomParseUUIDPipe()) id: string) {
-        const user = await this.userService.findOne(id, { includeRoles: true });
-        return UserMapper.toUserDTO(user);
+        const user = await this.userService.findOne(id);
+        // return UserMapper.toUserDTO(user);
+        return user;
     }
 
     @Get('/by-uid_number/:uid')
@@ -58,8 +59,9 @@ export class UserController {
             },
         },
     })
-    async findByUidNumber(@Param('uid') uid: string) {
-        const user = await this.userService.findByUidNumber(uid, { includeRoles: true });
-        return UserMapper.toUserDTO(user);
+    async findByTubNumber(@Param('uid') uid: string) {
+        const user = await this.userService.findByTubNumber(uid);
+        // return UserMapper.toUserDTO(user);
+        return user;
     }
 }

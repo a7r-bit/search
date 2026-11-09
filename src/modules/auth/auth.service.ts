@@ -4,7 +4,7 @@ import { RoleService } from '../role';
 import { PayloadDTO, TokenService } from '../token';
 import { PoliticService } from '../politic/politic.service';
 import { EmployeesParserService } from '../../infrastructure/employees-parser';
-import { PrismaService } from '../prisma';
+import { UserProvisioningService } from '../../user-provisioning/user-provisioning.service';
 import { RequestUser } from '../../common/types/request-user';
 import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 
@@ -17,51 +17,18 @@ export class AuthService {
         private readonly tokenService: TokenService,
         private readonly groupService: PoliticService,
         private readonly employeesService: EmployeesParserService,
-        private readonly prisma: PrismaService,
+        private readonly userProvisioningService: UserProvisioningService,
     ) {}
     async signIn(req: any) {
         const reqUser: RequestUser = req.user;
 
         const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
         const externalPoliticGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
-        const user = await this.prisma.user.upsert({
-            where: { uidNumber: userExternal.ldap_tab_num },
-            create: {
-                firstName: userExternal.fname,
-                middleName: userExternal.surname,
-                uidNumber: userExternal.ldap_tab_num,
-                role: {
-                    connect: {
-                        name: 'User',
-                    },
-                },
-                politicsGroups: {
-                    connectOrCreate: externalPoliticGroups.map((group) => ({
-                        where: { externalId: group.id },
-                        create: {
-                            name: group.name,
-                            externalId: group.id,
-                        },
-                    })),
-                },
-            },
-            update: {
-                firstName: userExternal.fname,
-                middleName: userExternal.surname,
-                uidNumber: userExternal.ldap_tab_num,
-                politicsGroups: {
-                    connectOrCreate: externalPoliticGroups.map((group) => ({
-                        where: { externalId: group.id },
-                        create: {
-                            name: group.name,
-                            externalId: group.id,
-                        },
-                    })),
-                },
-            },
-            include: {
-                role: true,
-            },
+        const user = await this.userProvisioningService.provisionFromExternal({
+            uidNumber: userExternal.ldap_tab_num,
+            firstName: userExternal.fname,
+            middleName: userExternal.surname,
+            departments: externalPoliticGroups.map((group) => ({ externalId: group.id, name: group.name })),
         });
 
         // Получение групп пользователя для доступа к Node и NodeAccess
@@ -98,11 +65,12 @@ export class AuthService {
             throw new BadRequestException('Пользователь не найден');
         }
 
-        const user = await this.userService.findOne(reqUser.id, { includeRoles: true });
+        const user = await this.userService.findOne(reqUser.id);
 
         const requiredRole = await this.roleService.getRoleByName(roleName);
+        const userRoles = await this.roleService.gerRoleByUserId(reqUser.id);
 
-        if (!user.role.some((role) => role.id == requiredRole.id)) {
+        if (!userRoles.some((role) => role.id == requiredRole.id)) {
             throw new ForbiddenException(`У пользователя нет доступа к роли ${roleName}`);
         }
 
@@ -127,20 +95,22 @@ export class AuthService {
                 firstName: user.firstName,
                 middleName: user.middleName,
                 activeRole: requiredRole.name,
-                roles: user.role.map((r) => r.name),
+                roles: userRoles.map((r) => r.name),
             },
         };
     }
     async getMe(req: any) {
         const reqUser: RequestUser = req.user;
-        const user = await this.userService.findOne(reqUser.id, { includeRoles: true });
+        const user = await this.userService.findOne(reqUser.id);
+        const userRoles = await this.roleService.gerRoleByUserId(reqUser.id);
+
         return {
             id: user.id,
             uidNumber: user.uidNumber,
             firstName: user.firstName,
             middleName: user.middleName,
             activeRole: reqUser.activeRole,
-            roles: user.role.map((r) => r.name),
+            roles: userRoles.map((r) => r.name),
         };
     }
 

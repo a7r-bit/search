@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class RoleService {
@@ -27,5 +28,10 @@ export class RoleService {
             throw new NotFoundException(`Роль ${roleName} не найдена`);
         }
         return role;
+    }
+
+    async gerRoleByUserId(userId: string): Promise<Role[]> {
+        const roles = await this.prisma.role.findMany({ where: { users: { some: { id: userId } } } });
+        return roles;
     }
 }

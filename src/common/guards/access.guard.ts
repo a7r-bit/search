@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { TokenService } from '../../modules/token/token.service';
 import { RoleService } from '../../modules/role/role.service';
@@ -8,6 +8,7 @@ import { RequestUser } from '../types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import ContextStorageService, { ContextStorageServiceKey } from '../../infrastructure/context/domain/interfaces/contextStorageService';
+import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 
 /*
  *   Проверка токена при обращении к серверу и установка роли,
@@ -26,8 +27,8 @@ import ContextStorageService, { ContextStorageServiceKey } from '../../infrastru
  */
 @Injectable()
 export class AccessGuard implements CanActivate {
-    private logger = new Logger(AccessGuard.name);
     constructor(
+        @Inject(LoggerKey) private readonly logger: Logger,
         private readonly reflector: Reflector,
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
@@ -41,7 +42,6 @@ export class AccessGuard implements CanActivate {
         const isPublic = this.reflector.get<boolean>(IS_PUBLIC_KEY, context.getHandler());
 
         if (isPublic) return true;
-        // if (request.url.includes('auth/signIn')) return true;
 
         if (!request.headers.authorization) throw new UnauthorizedException('Невалидные данные токена');
 
@@ -59,10 +59,7 @@ export class AccessGuard implements CanActivate {
                 const politicGroups = payload.politicGroups;
                 const activeRole = await this.roleService.getRoleWithPermissions(payload.activeRole);
 
-                const user = await this.userService.findOne(userId, {
-                    includeRoles: true,
-                    includePermissions: true,
-                });
+                const user = await this.userService.findOne(userId);
 
                 const requestUser: RequestUser = {
                     id: user.id,
@@ -78,7 +75,9 @@ export class AccessGuard implements CanActivate {
                     activeRole: requestUser.activeRole,
                 });
 
-                if (!user.role.some((r) => r.id == activeRole.id)) {
+                const userRoles = await this.roleService.gerRoleByUserId(userId);
+
+                if (!userRoles.some((r) => r.id == activeRole.id)) {
                     throw new UnauthorizedException('Невалидные данные токена');
                 }
 

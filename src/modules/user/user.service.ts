@@ -1,58 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from '../prisma/prisma.service';
-import { UserWithRoles, UserWithRolesAndPermissions } from './types';
-import { Prisma, User } from '@prisma/client';
+import { User } from '@prisma/client';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly userRepository: UserRepository) {}
 
-    async findAll(options?: {
-        includeRoles?: boolean;
-        includePermissions?: boolean;
-    }): Promise<(User | UserWithRoles | UserWithRolesAndPermissions)[]> {
-        const include: Prisma.UserInclude = {};
-
-        if (options?.includeRoles) {
-            include.role = {
-                include: options?.includePermissions ? { permissions: true } : undefined,
-            };
-        }
-
-        return await this.prisma.user.findMany({
-            include: Object.keys(include).length > 0 ? include : undefined,
-        });
+    async findAll(): Promise<User[]> {
+        return await this.userRepository.findMany();
     }
 
-    async findOne(id: string): Promise<User>;
-    async findOne(id: string, options: { includeRoles: true }): Promise<UserWithRoles>;
-    async findOne(id: string, options: { includeRoles: true; includePermissions: true }): Promise<UserWithRolesAndPermissions>;
-    async findOne(
-        id: string,
-        options?: { includeRoles?: boolean; includePermissions?: boolean },
-    ): Promise<User | UserWithRoles | UserWithRolesAndPermissions>;
-
-    async findOne(
-        id: string,
-        options?: {
-            includeRoles?: boolean;
-            includePermissions?: boolean;
-        },
-    ): Promise<User | UserWithRoles | UserWithRolesAndPermissions> {
-        const include: Prisma.UserInclude = {};
-
-        if (options?.includeRoles) {
-            include.role = {
-                include: options?.includePermissions ? { permissions: true } : undefined,
-            };
-        }
-
-        const user = await this.prisma.user.findUnique({
-            where: { id },
-            include: Object.keys(include).length > 0 ? include : undefined,
-        });
+    async findOne(id: string): Promise<User> {
+        const user = await this.userRepository.findOne(id);
 
         if (!user) {
             throw new BadRequestException('Пользователь не найден');
@@ -61,68 +22,41 @@ export class UserService {
         return user;
     }
 
-    async findByUidNumber(id: string): Promise<User>;
-    async findByUidNumber(id: string, options: { includeRoles: true }): Promise<UserWithRoles>;
-    async findByUidNumber(id: string, options: { includeRoles: true; includePermissions: true }): Promise<UserWithRolesAndPermissions>;
-    async findByUidNumber(
-        id: string,
-        options?: { includeRoles?: boolean; includePermissions?: boolean },
-    ): Promise<User | UserWithRoles | UserWithRolesAndPermissions>;
-
-    async findByUidNumber(
-        uidNumber: string,
-        options?: {
-            includeRoles?: boolean;
-            includePermissions?: boolean;
-        },
-    ): Promise<User | UserWithRoles | UserWithRolesAndPermissions | null> {
-        const include: Prisma.UserInclude = {};
-
-        if (options?.includeRoles) {
-            include.role = {
-                include: options?.includePermissions ? { permissions: true } : undefined,
-            };
-        }
-
-        const user = await this.prisma.user.findUnique({
-            where: { uidNumber },
-            include: Object.keys(include).length > 0 ? include : undefined,
-        });
+    async findByTubNumber(tabNum: string): Promise<User> {
+        const user = await this.userRepository.findByTabNumber(tabNum);
 
         return user;
     }
 
     async create(createUserDto: CreateUserDto): Promise<User> {
-        const { firstName, middleName, uidNumber, groups, roles } = createUserDto;
-        const isExist = await this.prisma.user.findUnique({ where: { uidNumber } });
-        if (isExist) throw new BadRequestException(`Пользователь с ${uidNumber} уже существует`);
-        const user = await this.prisma.user.create({
-            data: {
-                firstName,
-                middleName,
-                groups,
-                uidNumber,
-                role: { connect: roles },
-            },
+        const isExist = await this.userRepository.findOne(createUserDto.uidNumber);
+        if (isExist) throw new BadRequestException(`Пользователь с ${createUserDto.uidNumber} уже существует`);
+        const user = await this.userRepository.create({
+            firstName: createUserDto.firstName,
+            middleName: createUserDto.middleName,
+            groups: createUserDto.groups,
+            uidNumber: createUserDto.uidNumber,
+            roles: createUserDto.roles,
         });
         return user;
     }
 
     async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-        const { firstName, groups, middleName, uidNumber, roles } = updateUserDto;
-        await this.findOne(id);
-        if (uidNumber) {
-            const isExist = await this.findByUidNumber(uidNumber);
-            if (isExist) throw new BadRequestException(`Пользователь с ${uidNumber} уже существует`);
+        const user = await this.userRepository.findOne(id);
+        if (user.uidNumber !== updateUserDto.uidNumber) {
+            const isExist = await this.userRepository.findByTabNumber(updateUserDto.uidNumber);
+            if (isExist) throw new BadRequestException(`Пользователь с ${updateUserDto.uidNumber} уже существует`);
         }
-        return await this.prisma.user.update({
-            where: { id },
-            data: { firstName, middleName, groups, uidNumber, role: { set: roles } },
-        });
+        return await this.userRepository.update(id, updateUserDto);
     }
 
     async remove(id: string): Promise<User> {
-        await this.findOne(id);
-        return await this.prisma.user.delete({ where: { id } });
+        const user = await this.userRepository.findOne(id);
+
+        if (!user) {
+            throw new BadRequestException('Пользователь не найден');
+        }
+
+        return await this.userRepository.remove(id);
     }
 }

@@ -7,7 +7,6 @@ import { AccessGuard } from './common/guards/access.guard';
 import { ScopeGuard } from './common/guards/scope.guard';
 import { S3Module } from './infrastructure/s3';
 import { EmployeesParserModule } from './infrastructure/employees-parser';
-// import { HttpInfrastructureModule } from './infrastructure/http/http.module';
 import {
     AuthModule,
     DocumentVersionModule,
@@ -24,6 +23,7 @@ import { adminJsImport } from './modules/admin/admin-js.import';
 import { LoggerModule } from './infrastructure/logger/infrastructure/winston/nestjs/logger.module';
 import { ContextModule } from './infrastructure/context/infrastructure/nestjs/contextModule';
 import { HttpInfrastructureModule } from './infrastructure/http/http.module';
+import { UserProvisioningModule } from './user-provisioning/user-provisioning.module';
 
 @Module({
     imports: [
@@ -43,6 +43,7 @@ import { HttpInfrastructureModule } from './infrastructure/http/http.module';
         TokenModule,
         ContextModule,
         HttpInfrastructureModule,
+        UserProvisioningModule,
         ...(process.env.ENABLE_ADMIN === 'true' ? [adminJsImport] : []),
     ],
     controllers: [AppController],

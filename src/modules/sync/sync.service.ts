@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EmployeesParserService } from '../../infrastructure';
 import { PoliticService } from '../politic';
 import { PrismaService } from '../prisma';
+import { UserProvisioningService } from '../../user-provisioning/user-provisioning.service';
 
 @Injectable()
 export class SyncService {
@@ -10,6 +11,7 @@ export class SyncService {
         private readonly employeesParserService: EmployeesParserService,
         private readonly politicService: PoliticService,
         private readonly prisma: PrismaService,
+        private readonly userProvisioningService: UserProvisioningService,
     ) {}
 
     async syncGroups() {
@@ -36,49 +38,15 @@ export class SyncService {
 
     async syncUsers() {
         const externalUsers = (await this.employeesParserService.getUsersList(1, 5000)).filter((user) => user.ldap_tab_num !== null);
-        await this.prisma.$transaction(
-            async (tx) => {
-                for (const user of externalUsers) {
-                    await tx.user.upsert({
-                        where: { uidNumber: user.ldap_tab_num },
-                        create: {
-                            firstName: user.fname,
-                            middleName: user.surname,
-                            uidNumber: user.ldap_tab_num,
-                            role: {
-                                connect: {
-                                    name: 'User',
-                                },
-                            },
-                            politicsGroups: {
-                                connectOrCreate: user.departments.map((group) => ({
-                                    where: { externalId: group.id },
-                                    create: {
-                                        name: group.name,
-                                        externalId: group.id,
-                                    },
-                                })),
-                            },
-                        },
-                        update: {
-                            firstName: user.fname,
-                            middleName: user.surname,
-                            uidNumber: user.ldap_tab_num,
-                            politicsGroups: {
-                                connectOrCreate: user.departments.map((group) => ({
-                                    where: { externalId: group.id },
-                                    create: {
-                                        name: group.name,
-                                        externalId: group.id,
-                                    },
-                                })),
-                            },
-                        },
-                    });
-                }
-            },
-            { maxWait: 100000, timeout: 100000 },
-        );
+
+        for (const user of externalUsers) {
+            await this.userProvisioningService.provisionFromExternal({
+                uidNumber: user.ldap_tab_num,
+                firstName: user.fname,
+                middleName: user.surname,
+                departments: (user.departments ?? []).map((group) => ({ externalId: group.id, name: group.name })),
+            });
+        }
     }
 
     async findSyncUsersErrorReason() {
