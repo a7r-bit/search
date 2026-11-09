@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { GotenbergService } from './gotenberg.service';
-import { HttpInfrastructureModule } from '../../infrastructure/http/http.module';
+import { GotenbergService } from './application/gotenberg.service';
+import { HttpInfrastructureModule } from '../../shared/infrastructure/http/http.module';
 
 @Module({
     imports: [HttpInfrastructureModule],

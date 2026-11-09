@@ -3,10 +3,10 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AccessGuard } from './common/guards/access.guard';
-import { ScopeGuard } from './common/guards/scope.guard';
-import { S3Module } from './infrastructure/s3/s3.module';
-import { EmployeesParserModule } from './infrastructure/employees-parser/employees-parser.module';
+import { AccessGuard } from './shared/presentation/guards/access.guard';
+import { ScopeGuard } from './shared/presentation/guards/scope.guard';
+import { S3Module } from './shared/infrastructure/s3/s3.module';
+import { EmployeesParserModule } from './modules/employees-parser/employees-parser.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DocumentVersionModule } from './modules/document-version/document-version.module';
 import { FileProviderModule } from './modules/file-provider/file-provider.module';
@@ -18,10 +18,10 @@ import { SyncModule } from './modules/sync/sync.module';
 import { TokenModule } from './modules/token/token.module';
 import { UserModule } from './modules/user/user.module';
 import { adminJsImport } from './modules/admin/admin-js.import';
-import { LoggerModule } from './infrastructure/logger/infrastructure/winston/nestjs/logger.module';
-import { ContextModule } from './infrastructure/context/infrastructure/nestjs/contextModule';
-import { HttpInfrastructureModule } from './infrastructure/http/http.module';
-import { UserProvisioningModule } from './user-provisioning/user-provisioning.module';
+import { LoggerModule } from './shared/infrastructure/logger/infrastructure/winston/nestjs/logger.module';
+import { ContextModule } from './shared/infrastructure/context/infrastructure/nestjs/contextModule';
+import { HttpInfrastructureModule } from './shared/infrastructure/http/http.module';
+import { UserProvisioningModule } from './modules/user-provisioning/user-provisioning.module';
 
 @Module({
     imports: [

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { SearchService } from './search.service';
-import { SearchController } from './search.controller';
-import { HttpInfrastructureModule } from '../../infrastructure/http/http.module';
+import { SearchService } from './application/search.service';
+import { SearchController } from './presentation/search.controller';
+import { HttpInfrastructureModule } from '../../shared/infrastructure/http/http.module';
 
 @Module({
     imports: [HttpInfrastructureModule],

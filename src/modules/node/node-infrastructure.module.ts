@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { NodeRepository } from '../node/node.repository';
-import { NodeTreeRepository } from '../node/node-tree.repository';
+import { NodeRepository } from './domain/node.repository';
+import { NodeTreeRepository } from './domain/node-tree.repository';
 
 @Module({
     providers: [NodeRepository, NodeTreeRepository],

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UserController } from './user.controller';
+import { UserService } from './application/user.service';
+import { UserController } from './presentation/user.controller';
 import { RoleModule } from '../role/role.module';
-import { PrismaModule } from '../prisma/prisma.module';
-import { UserRepository } from './user.repository';
+import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
+import { UserRepository } from './domain/user.repository';
 
 @Module({
     imports: [RoleModule, PrismaModule],

@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import Strategy from 'passport-ldapauth';
 import { ConfigService } from '@nestjs/config';
-import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
-import { LdapUserPayload } from './ldap.user.payload';
-import { LdapConfig } from './config/ldap-config.interface';
+import Logger, { LoggerKey } from '../../shared/infrastructure/logger/domain/logger';
+import { LdapUserPayload } from './domain/ldap.user.payload';
+import { LdapConfig } from './domain/config/ldap-config.interface';
 
 function requireEnv<T>(config: ConfigService, key: string): T {
     const value = config.get<T>(key);
