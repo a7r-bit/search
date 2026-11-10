@@ -3,6 +3,8 @@ node_modules
 
 *.log
 .git
+.env
+.env.*
 coverage
 
 docker-compose.yml
