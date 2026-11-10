@@ -25,7 +25,7 @@ export class CheckGroupPolitic implements CanActivate {
 
         if (request.user?.activeRole === AppRole.OWNER) return true;
 
-        const matches = await this.policeService.checkUserToNodeAccess(request.user['politicGroups'], request.query.parentId as string);
+        const matches = await this.policeService.checkUserToNodeAccess(request.user.politicGroups, request.query.parentId as string);
 
         if (matches) return true;
 

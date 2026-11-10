@@ -1,20 +1,35 @@
 # План рефакторинга архитектуры проекта Search
 
 > **Дата создания:** 2025-06-18
-> **Последнее обновление:** 2026-10-13
+> **Последнее обновление:** 2026-11-09
 > **Цели:** Улучшение соответствия требованиям LDAP, полное удаление поискового движка Elasticsearch (реализован как отдельный микросервис), улучшение общей архитектуры и соответствия SOLID
+
+> **Структура кода (важно):** с 2026-11-09 `src/` перестроен в **feature-first DDD** (см. `RESTRUCTURE_PLAN.md`):
+> - `modules/<фича>/` — bounded contexts со слоями `presentation/` (controller, dto, mappers), `application/` (service), `domain/` (repository, types, interfaces, config).
+> - `shared/` — ядро: `domain/` (types, constants), `application/` (permission), `infrastructure/` (prisma, s3, logger, context, http/clients, bullmq), `presentation/` (guards, decorators, pipes).
+> - `src/common/` и `src/infrastructure/` **упразднены** (слиты в `shared/`).
+>
+> Все пути в этом плане приведены к новой структуре.
 
 **Легенда статусов:** ✅ выполнено · 🔄 частично · ⬜ не начато
 
-## 📌 Актуальное состояние проекта (на 2026-10-13)
+## 📌 Актуальное состояние проекта (на 2026-11-09)
 
 Что изменилось с момента создания плана:
 
-- Появился слой `src/infrastructure/`: логгер (Winston, разделение domain/infrastructure), CLS-контекст, `s3`, `employees-parser` (перенесён из `modules`). Эта структура (интерфейс в domain + реализация в infrastructure) — образец для остальных слоёв.
+- **DDD-переструктуризация `src/` завершена (RESTRUCTURE_PLAN.md):**
+    - `src/common/` + `src/infrastructure/` → `src/shared/` (разбито на `domain / application / infrastructure / presentation`).
+    - `modules/prisma` → `shared/infrastructure/prisma`; `modules/access-control` → `shared/application/permission`; `modules/bullmq` → `shared/infrastructure/bullmq`.
+    - `src/user-provisioning` → `modules/user-provisioning`; `infrastructure/employees-parser` → `modules/employees-parser`.
+    - Каждая фича в `modules/<фича>/` разделена на `presentation/`, `application/`, `domain/`. Переносы через `git mv` (история сохранена).
+- **Слой `shared/infrastructure/`:** логгер (Winston, `shared/infrastructure/logger`), CLS-контекст (`shared/infrastructure/context`), `s3`, HTTP-клиенты (`shared/infrastructure/http/clients`: `SearchApiClient`, `GotenbergClient`, `EmployeesApiClient`). Эта структура (интерфейс в domain + реализация в infrastructure) — образец для остальных слоёв.
 - Новые модули: `sync` (синхронизация отделов/пользователей из внешнего API), `file-provider` (gRPC-сервис, порт 50051), `admin` (adminJS, включается `ENABLE_ADMIN=true`).
-- Хранение файлов: локальный диск → S3 (`S3Service`, папки `original/` и `converted/`).
+- Хранение файлов: локальный диск → S3 (`S3Service` в `shared/infrastructure/s3`, папки `original/` и `converted/`).
+- Поисковый движок Elasticsearch вынесен в отдельный микросервис; в API — адаптер `SearchService` (`modules/search`) + доменные интерфейсы `SearchReader`/`IndexWriter` (`modules/search/domain`) + `SearchApiClient` (`shared/infrastructure/http/clients`).
 - Дублирование `TokenModule` в `app.module.ts` **исправлено** (импортируется один раз).
-- Фаза 1 (удаление ES) **выполнена в рабочем дереве** (не закоммичена): `modules/search`, `global-search`, очередь `elasticsearch`, `common/elasic-search-models` и `docker/elasticsearch` удалены, ссылки в сервисах, `docker-compose.yml` и `.env.example` убраны. Проверено 2026-10-13: `npm run build` проходит, ссылок на «elastic» в `src/`, `docker/`, `.env.example` нет.
+- `npm test` — **30/30**, `npm run build` — 0 ошибок (проверено 2026-11-09).
+
+> Примечание: в старом плане `modules/search` означал удалённый ES-модуль (`elasticsearch-index.*`). Теперь `modules/search` — это **новый** адаптер внешнего поискового API. Не путать.
 
 ---
 
@@ -22,10 +37,10 @@
 
 | Фаза      | Описание                                   | Оценка (дни) | Статус                                      |
 | --------- | ------------------------------------------ | ------------ | ------------------------------------------- |
-| Фаза 0    | Подготовка и исправление критических багов | 1–2          | 🔄 (осталось: баг FileProvider, `npm test`) |
+| Фаза 0    | Подготовка и исправление критических багов | 1–2          | ✅ (FileProvider-баг исправлен, тесты 30/30) |
 | Фаза 1    | Удаление Elasticsearch                     | 3–4          | ✅                                          |
 | Фаза 2    | Улучшение LDAP интеграции                  | 4–5          | 🔄                                          |
-| Фаза 3    | Улучшение общей архитектуры (SOLID)        | 4–5          | ⬜                                          |
+| Фаза 3    | Улучшение общей архитектуры (SOLID)        | 4–5          | 🔄                                          |
 | Фаза 4    | Тестирование и документация                | 2–3          | ⬜                                          |
 | **Итого** |                                            | **14–19**    |                                             |
 
@@ -36,18 +51,16 @@
 ### 0.1 Исправить критические баги до начала рефакторинга
 
 - [x] **app.module.ts:** дублирование импорта `TokenModule` — исправлено, модуль импортируется один раз
-- [x] **Переименование файла:** `src/modules/token/token.connroller.ts` → `src/modules/token/token.controller.ts`
-- [x] **Логирование:** заменить `console.log` на `Logger`/Winston-логгер (инфраструктура уже есть, см. `src/infrastructure/logger/`):
-    - `src/modules/ldap/ldap.module.ts` — 3 вызова `console.log` в конструкторе `LdapStrategy`
-    - `src/modules/bullmq/queues/elasticsearch/elasticsearch.producer.ts` — `console.log` в `updateAsync` и `deleteAsync`
-- [ ] **Баг `FileProviderService.getFileUrl`** (`src/modules/file-provider/file-provider.service.ts`): теряется gRPC-статус. Внутреннее исключение использует `status: status.NOT_FOUND` вместо `code:`, а `catch`-блок проглатывает **все** ошибки (включая `NotFound` из `S3Service`) в одну `RpcException` без кода. Исправить: передавать `code:`, в `catch` пробрасывать уже существующую `RpcException` как есть (паттерн как в `getAccessToFile`).
-    - Примечание: `documentVersion.mediaFile.fileUrl` — **не** баг: это поле DTO `MediaFileDto`, маппится из `mediaFile.filePath` (S3-ключ), и корректно передаётся в `S3Service.getFileUrl`.
+- [x] **Переименование файла:** `token.connroller.ts` → `token.controller.ts` (сейчас `modules/token/presentation/token.controller.ts`)
+- [x] **Логирование:** `console.log` → Winston-логгер (`LoggerKey` из `shared/infrastructure/logger/domain/logger.ts`)
+- [x] **Баг `FileProviderService.getFileUrl`** (`modules/file-provider/application/file-provider.service.ts`): терялся gRPC-статус — передается `code:`, а уже существующая `RpcException` пробрасывается как есть (паттерн как в `getAccessToFile`)
+    - Примечание: `documentVersion.mediaFile.fileUrl` — **не** баг: это поле DTO `MediaFileDto`, маппится из `mediaFile.filePath` (S3-ключ) и корректно передаётся в `S3Service.getFileUrl`.
 
 ### 0.2 Запустить тесты и убедиться в baseline
 
-- [ ] Выполнить `npm test` — проверить что текущие тесты проходят
-- [ ] Выполнить `npm run lint` — собрать текущий линтинг - ✖ 187 problems (171 errors, 16 warnings)
-- [x] Выполнить `npm run build` — убедиться, что сборка чистая
+- [x] `npm test` — 30/30 (проверено 2026-11-09)
+- [ ] `npm run lint` — собрать текущий линтинг (в `package.json` скрипт вшит с `--fix`; прогонять без фикса, чтобы не затронуть чужие файлы)
+- [x] `npm run build` — сборка чистая
 - [x] Создать бэкап ветки перед началом рефакторинга
 
 ---
@@ -56,202 +69,95 @@
 
 ### 1.1 Удалить зависимости из package.json
 
-**Удалить пакеты:**
+**Удалить пакеты:** `@elastic/elasticsearch`, `@nestjs/elasticsearch`.
+**Оставить:** `pdf-parse` — для извлечения текста из PDF.
 
-- `@elastic/elasticsearch`
-- `@nestjs/elasticsearch`
+### 1.2 Удалить модуль `search/` (старый ES-модуль) целиком
 
-**Оставить (для конвертации PDF):**
-
-- `pdf-parse` — нужен для извлечения текста из PDF
-
-### 1.2 Удалить модуль `search/` целиком
-
-**Удалить файлы:**
-
-```
-src/modules/search/
-├── elasticsearch-index.config.ts    ❌ УДАЛИТЬ
-├── elasticsearch-index.service.ts   ❌ УДАЛИТЬ
-├── index.ts                         ❌ УДАЛИТЬ
-├── search.module.ts                 ❌ УДАЛИТЬ
-└── search.service.ts                ❌ УДАЛИТЬ
-```
+Удалялись: `elasticsearch-index.config.ts`, `elasticsearch-index.service.ts`, `search.module.ts`, `search.service.ts` (это был ES-модуль; теперь `modules/search` — новый адаптер внешнего API).
 
 ### 1.3 Удалить BullMQ очередь `elasticsearch`
 
-**Удалить файлы:**
-
-```
-src/modules/bullmq/queues/elasticsearch/
-├── elasticsearch.processor.ts   ❌ УДАЛИТЬ
-├── elasticsearch.producer.ts    ❌ УДАЛИТЬ
-└── elasticsearch.types.ts       ❌ УДАЛИТЬ
-```
-
-**Изменить `src/modules/bullmq/bullmq.module.ts`:**
-
-- [x] Убрать `BullModule.registerQueue` для очереди `elasticsearch`
-- [x] Убрать `SearchModule` из `imports`
-- [x] Убрать `ElasticsearchProcessor` из `providers`
-- [x] Убрать `ElasticSearchProducer` из `providers` и `exports`
+Удалялись: `queues/elasticsearch/{elasticsearch.processor,elasticsearch.producer,elasticsearch.types}.ts`; убраны `BullModule.registerQueue`, `SearchModule`, процессор и производитель из `shared/infrastructure/bullmq/bullmq.module.ts`.
 
 ### 1.4 Обновить `document-conversion.processor.ts`
 
-**Файл:** `src/modules/bullmq/queues/document-conversion/document-conversion.processor.ts`
+**Файл:** `shared/infrastructure/bullmq/queues/document-conversion/document-conversion.processor.ts`
 
 - [x] Удалить import `SearchService`, `ElasticTypes`, `DocumentVersionIndexDto`, `instanceToPlain`
 - [x] Удалить `searchService` из constructor
-- [x] Удалить блок индексации после обновления статуса:
-
-```typescript
-// УДАЛИТЬ этот блок:
-await this.searchService.indexDocument(
-    ElasticTypes.DocumentVersion,
-    documentVersionId,
-    instanceToPlain(
-        new DocumentVersionIndexDto(
-            text,
-            documentVersion.createdAt,
-            documentVersion.nodeId,
-            documentVersion.mediaFile.fileName,
-            documentVersion.mediaFile.filePath,
-            documentVersion.version,
-        ),
-    ),
-);
-```
-
-> Извлечение текста `pdfService.extractTextFromPdfByBuffer` оставить только если результат нужен для других целей; при полном удалении ES вызов можно убрать вместе с переменной `text`.
-> ⚠️ **Не сделано:** `text` извлекается, но теперь не используется — мёртвый код, удалить (включая вызов `pdfService.extractTextFromPdfByBuffer`, если извлечение больше не нужно).
+- [x] Удалить блок индексации после обновления статуса
+- ⚠️ **Осталось:** извлечённый `text` больше не используется — мёртвый код, удалить (включая вызов `pdfService.extractTextFromPdfByBuffer`, если извлечение больше не нужно)
 
 ### 1.5 Обновить `node.service.ts`
 
-**Файл:** `src/modules/node/node.service.ts`
+**Файл:** `modules/node/application/node.service.ts`
 
 - [x] Удалить import `ElasticTypes`, `ElasticSearchProducer`, `NodeIndexProps`, `instanceToPlain`
 - [x] Удалить `esProducer` из constructor
-- [x] Удалить вызовы `esProducer.indexAsync()` в методах `create()`, `update()`, `move()`
-- [x] Удалить вызов `esProducer.deleteAsync()` в методе `delete()` (вместе с `try/catch`)
+- [x] Удалить вызовы `esProducer.indexAsync()` в `create()`, `update()`, `move()`
+- [x] Удалить вызов `esProducer.deleteAsync()` в `delete()` (вместе с `try/catch`)
 
 ### 1.6 Обновить `document-version.service.ts`
 
-**Файл:** `src/modules/document-version/document-version.service.ts`
+**Файл:** `modules/document-version/application/document-version.service.ts`
 
 - [x] Удалить import `ElasticTypes`, `ElasticSearchProducer`
 - [x] Удалить `esProducer` из constructor
-- [x] Удалить вызов `esProducer.updateAsync()` в методе `update()`
-- [x] Удалить вызов `esProducer.deleteAsync()` в методе `remove()`
-- [x] Удалить вызов `esProducer.deleteAsync()` в методе `removeByNodeId()`
+- [x] Удалить вызовы `esProducer.updateAsync()`/`deleteAsync()` в `update()`, `remove()`, `removeByNodeId()`
 
 ### 1.7 Удалить `GlobalSearchModule` целиком
 
-**Удалить файлы:**
+- [x] Каталог `modules/global-search/` удалён
 
-```
-src/modules/global-search/
-├── dto/
-│   ├── index.ts                        ❌ УДАЛИТЬ
-│   ├── search-file.dto.ts              ❌ УДАЛИТЬ
-│   ├── search-highlight.dto.ts         ❌ УДАЛИТЬ
-│   ├── search-response.dto.ts          ❌ УДАЛИТЬ
-│   └── search-result-item.dto.ts       ❌ УДАЛИТЬ
-├── mappers/
-│   └── search-result.mapper.ts         ❌ УДАЛИТЬ
-├── global-search.controller.ts         ❌ УДАЛИТЬ
-├── global-search.module.ts             ❌ УДАЛИТЬ
-├── global-search.service.ts            ❌ УДАЛИТЬ
-└── index.ts                            ❌ УДАЛИТЬ
-```
-
-- [x] Каталог `src/modules/global-search/` удалён (проверено 2026-10-13)
-
-### 1.8 Обновить `app.module.ts` и баррел `src/modules/index.ts`
-
-**Файлы:** `src/app.module.ts`, `src/modules/index.ts`
+### 1.8 Обновить `app.module.ts`
 
 - [x] Убрать `GlobalSearchModule` из `imports` в `app.module.ts`
-- [x] Убрать экспорт `GlobalSearchModule` из `src/modules/index.ts`
 
-### 1.9 Удалить `ElasticTypes` из `common/constants.ts`
+### 1.9 Удалить `ElasticTypes` из констант
 
-**Файл:** `src/common/constants.ts`
+**Файл:** `shared/domain/constants.ts`
 
 - [x] Удалить enum `ElasticTypes` целиком
 
 ### 1.10 Удалить `common/elasic-search-models/`
 
-**Удалить файлы:**
-
-```
-src/common/elasic-search-models/
-├── document-version-Index.dto.ts  ❌ УДАЛИТЬ (обрати внимание: в имени заглавная "I")
-├── node-index.dto.ts              ❌ УДАЛИТЬ
-└── index.ts                       ❌ УДАЛИТЬ
-```
+- [x] Каталог удалён (обратите внимание: в имени была заглавная "I" — `document-version-Index.dto.ts`)
 
 ### 1.11 Обновить docker-compose.yml
 
-- [x] Убрать сервис `elasticsearch` из compose файла
-- [x] Убрать `depends_on: elasticsearch` из сервиса `app`
-- [x] Убрать volume `esdata` из секции `volumes`
+- [x] Убрать сервис `elasticsearch`, `depends_on: elasticsearch`, volume `esdata`
 
 ### 1.12 Удалить docker конфигурацию Elasticsearch
 
-```
-docker/elasticsearch/   ❌ УДАЛИТЬ папку целиком
-```
+- [x] `docker/elasticsearch/` удалён
 
 ### 1.13 Обновить .env.example
 
-- [x] Убрать переменные:
-    - `ELASTICSEARCH_HOST`
-    - `ELASTICSEARCH_PORT`
-    - `ELASTIC_USERNAME`
-    - `ELASTIC_PASSWORD`
-    - `ELASTIC_NODE_NAME`
-    - `ELASTIC_STACK_VERSION`
-    - `ES_MAX_RETRIES`
-    - `ES_REQUEST_TIMEOUT_MS`
-    - `ES_PING_TIMEOUT_MS`
-    - `CLUSTER_NAME`
+- [x] Убрать `ELASTICSEARCH_*`, `ELASTIC_*`, `ES_*`, `CLUSTER_NAME`
 
 ### 1.14 Проверка после удаления
 
-- [x] `npm run build` — нет ошибок типов (остаточные импорты), проверено 2026-10-13
-- [x] `npm run lint` - ✖ 156 problems (146 errors, 10 warnings)
-- [x] Поиск по коду: `grep -ri "elastic" src/ docker/ .env.example` — ссылок нет (проверено 2026-10-13)
+- [x] `npm run build` — нет ошибок типов (проверено 2026-11-09)
+- [x] Поиск по коду: `grep -ri "elastic" src/ docker/ .env.example` — ссылок нет
 
 ---
 
 ## Фаза 2: Улучшение LDAP интеграции (4–5 дней)
 
-### 2.1 Рефакторинг `LdapStrategy` — улучшить типизацию и обработку ошибок
+### 2.1 Рефакторинг `LdapStrategy` — типизация и обработка ошибок
 
-**Файл:** `src/modules/ldap/ldap.module.ts`
+**Файл:** `modules/ldap/ldap.module.ts`
 
-- [x] Создать интерфейс `LdapUserPayload` с чёткой типизацией всех полей (создан: `src/modules/ldap/ldap.user.payload.ts`):
+- [x] Создан интерфейс `LdapUserPayload` (`modules/ldap/domain/ldap.user.payload.ts`)
+- [x] `validate(user: any)` → `validate(user: Record<string, unknown>): Promise<LdapUserPayload>`
+- [-] Метод `extractGroups(user)` для извлечения групп из LDAP-атрибутов
+- [x] Fallback для разных атрибутов uid (`sAMAccountName` → `uid`)
+- [x] Заменить `console.log` в конструкторе на внедрённый логгер (`@Inject(LoggerKey)` из `shared/infrastructure/logger/domain/logger.ts`)
 
-    ```typescript
-    interface LdapUserPayload {
-        uidNumber: string;
-        sAMAccountName?: string;
-        givenName?: string;
-        sn?: string;
-        mail?: string;
-        displayName?: string;
-        dn?: string;
-    }
-    ```
+### 2.2 Конфигурационный интерфейс для LDAP
 
-- [x] Обновить метод `validate(user: any)` → `validate(user: Record<string, unknown>): Promise<LdapUserPayload>`
-- [-] Реализовать метод `extractGroups(user)` для извлечения групп пользователя из LDAP атрибутов
-- [ ] Добавить fallback логику для разных атрибутов uid (`sAMAccountName`, `uid`) — сейчас `const uidNumber = String(user.sAMAccountName ?? '')`: если атрибут не пришёл, `uidNumber` станет пустой строкой, fallback на `user.uid` отсутствует
-- [x] Заменить `console.log` в конструкторе на внедрённый Winston-логгер (`@Inject(LoggerKey)` из `src/infrastructure/logger/domain/logger.ts`)
-
-### 2.2 Добавить конфигурационный интерфейс для LDAP
-
-- [x] **Новый файл:** `src/modules/ldap/config/ldap-config.interface.ts` (создан; фактический путь — с подпапкой `config/`)
+- [x] **Файл:** `modules/ldap/domain/config/ldap-config.interface.ts`
 
 ```typescript
 export interface LdapConfig {
@@ -267,25 +173,25 @@ export interface LdapConfig {
 
 ### 2.3 Построить `LdapConfig` в `LdapModule` и убрать прямой доступ к `process.env`
 
-**Файлы:** `src/modules/ldap/ldap.module.ts`
+**Файлы:** `modules/ldap/ldap.module.ts`
 
-- [x] Собрать `LdapConfig` в конструкторе стратегии через `ConfigService` (сейчас `bindDN: process.env.LDAP_ADMIN_DN` — единственный прямой доступ к `process.env`, заменить на `config.get<string>('LDAP_ADMIN_DN')`)
-- [ ] `searchFilter` вынести в конфигурацию (`(uid={{username}})` vs `(sAMAccountName={{username}})`), а не хардкодить — **не сделано**: значение всё ещё захардкожено в конструкторе (`'(|(sAMAccountName={{username}})(uid={{username}}))'`), из env не читается
-- [ ] Валидировать обязательные переменные окружения при старте (наст. стиль как в `TokenService` / `SearchModule` — бросать `Error` с понятным сообщением)
-- [x] Убедиться, что пароль (`LDAP_ADMIN_PASSWORD`) не попадает в логи — выполнено: конструктор конфигурацию не логирует, `validate()` пишет только `uidNumber`
-- [ ] Поле `tlsEnabled` читается (`LDAP_TLS_ENABLED`), но не используется: URL всегда `ldap://` — либо подключить к `ldaps://`, либо убрать
+- [x] Собрать `LdapConfig` в конструкторе через `ConfigService` (валидация через `requireEnv`)
+- [x] `searchFilter` вынесен в конфигурацию (читается из env)
+- [x] Валидировать обязательные env-переменные при старте (бросать `Error` с понятным сообщением)
+- [x] Пароль (`LDAP_ADMIN_PASSWORD`) не попадает в логи
+- [x] Поле `tlsEnabled` подключено к `ldaps://`
 
 ### 2.4 Обработка ошибок и наблюдаемость
 
-- [x] Обернуть ошибки аутентификации: отдельная обработка «пользователь не найден» / «неверный пароль» / «LDAP недоступен» — `LdapAuthGuard.handleRequest` классифицирует каждую неудачу (`classifyLdapFailure` / `classifyLdapError` из `src/modules/ldap/ldap-failure.ts`): нет креденшелов → 400, неверный пароль / неизвестный пользователь / состояние учётной записи (пароль истёк, аккаунт заблокирован, ...) → 401 с конкретным сообщением, LDAP недоступен (сеть/таймаут) или неверный searchBase → 503. Примечание: passport-ldapauth намеренно не различает «неверный пароль» и «пользователь не найден» в ответе клиенту (защита от перечисления учётных записей) — различие видно только в логах
-- [x] Логировать неудачные попытки входа через `logger.warn(...)` без данных о пароле — `LdapAuthGuard` пишет причину и username (из `req.body` читается только `username`, пароль не читается)
-- [x] При недоступности LDAP логировать причину (network/timeout/auth) для диагностики — `classifyLdapError` кладёт `err.name`/`message`/`code` (ECONNREFUSED, ETIMEDOUT, ...) в `detail` лога
-- [x] Unit-тесты классификатора: `src/modules/ldap/ldap-failure.spec.ts` (12 тестов, проходят)
+- [x] `LdapAuthGuard` (в `shared/presentation/guards/ldap-auth.guard.ts`) + классификатор `modules/ldap/domain/ldap-failure.ts`: нет креденшелов → 400, неверный пароль/неизвестный пользователь → 401, LDAP недоступен → 503
+- [x] Логирование неудачных попыток через `logger.warn(...)` без данных о пароле
+- [x] При недоступности LDAP — причина (network/timeout/auth) в логе
+- [x] Unit-тесты классификатора: `modules/ldap/domain/ldap-failure.spec.ts`
 
 ### 2.5 Тесты LDAP-стратегии
 
-- [x] Unit-тест `LdapStrategy.validate`: маппинг атрибутов, fallback `sAMAccountName` → `uid`, отсутствующие опциональные поля
-- [x] Unit-тест сборки `LdapConfig`: пропущенные env-переменные → ошибка старта
+- [x] Unit-тест `LdapStrategy.validate`: маппинг атрибутов, fallback `sAMAccountName` → `uid`
+- [x] Unit-тест сборки `LdapConfig`: пропущенные env → ошибка старта
 - [x] Тест, что пароль не логгируется
 
 ---
@@ -294,72 +200,66 @@ export interface LdapConfig {
 
 ### 3.1 Разделить `SearchService` (принцип I — Interface Segregation)
 
-`SearchService` сейчас объединяет чтение (`search`) и запись (`indexDocument` / `updateDocument` / `deleteDocument`), а потребуются разные: `GlobalSearchService` нужен только поиск, конвертер/процессоры — только индексирование.
+- [x] Вынесены интерфейсы `SearchReader` (search) и `IndexWriter` (index/update/delete) — `modules/search/domain/`
+- [x] Результат `search` типизирован доменными DTO `SearchResult`/`SearchQuery` (`modules/search/presentation/dto/`), а не сырым ответом
+- [x] `SearchService` (`modules/search/application/search.service.ts`) — адаптер, реализующий оба интерфейса и делегирующий в `SearchApiClient`
+- [x] `doc: any` в producer-методах заменён на типизированные payload'ы (`modules/search/domain/search-payload.interface.ts`)
 
-- [ ] Вынести два интерфейса, например `SearchReader` (search) и `IndexWriter` (index/update/delete)
-- [ ] Типизировать результат `search`: вернуть доменный DTO (`SearchHit`), а не сырой ответ ES — вызывающий код (`global-search.service.ts`) сейчас ходит по `hits.hits`, `hits.total.value` и ломается при смене поискового бэкенда (принцип L)
-- [ ] Заменить `doc: any` в producer-методах на типизированные payload'ы по индексам
+### 3.2 Абстрагировать guards от конкретных сервисов (принцип D — Dependency Inversion)
 
-### 3.2 Абстрагировать guards от конкретных сервисов модулей (принцип D — Dependency Inversion)
+`shared/presentation/guards/*` сейчас импортируют конкретные сервисы из `modules/*` (TokenService, RoleService, UserService, PoliticService) — общий слой зависит от фичевого.
 
-`src/common/guards/*` сейчас импортируют конкретные сервисы из `src/modules/*` (TokenService, RoleService, UserService, PoliticService) — общий слой зависит от фичевого, направление зависимостей обратное.
-
-- [ ] Описать интерфейсы в `common/` (или `infrastructure/`): `TokenVerifier`, `RoleResolver`, `UserProvider`, `NodeAccessChecker`
-- [ ] Реализации оставить в модулях (`TokenService`, `RoleService`, `UserService`, `PoliticService`), пробрасывать через токены DI (`useExisting`/`useFactory`)
-- [ ] `AccessGuard` и `CheckGroupPolitic`/`NodeAdminGuard` конструктором зависят только от интерфейсов
-- [ ] Унифицировать источник nodeId в guards: `CheckGroupPolitic` читает только `query.parentId`, `NodeAdminGuard` — `params.nodeId ?? query.nodeId` (принцип L — поведение «подменяется» в зависимости от маршрута)
+- [ ] Описать интерфейсы в `shared/domain/` (или `shared/application/`): `TokenVerifier`, `RoleResolver`, `UserProvider`, `NodeAccessChecker`
+- [ ] Реализации оставить в модулях (`modules/*/application/*.service.ts`), пробрасывать через токены DI (`useExisting`/`useFactory`)
+- [ ] `AccessGuard` (`shared/presentation/guards/access.guard.ts`) и `CheckGroupPolitic`/`NodeAdminGuard` конструктором зависеть только от интерфейсов
+- [ ] Унифицировать источник nodeId в guards: `CheckGroupPolitic` читает только `query.parentId`, `NodeAdminGuard` — `params.nodeId ?? query.nodeId`
 
 ### 3.3 Разделить «боги»-сервисы (принцип S — Single Responsibility)
 
-- [ ] **NodeService** (CRUD + валидация дерева + raw-SQL + ES-эффекты + права):
-    - `NodeRepository` (обёртка над Prisma, включая `getDescendantIds`)
-    - `NodeTreeService` (`validateParent`, `isDescendant`, `getPath`)
-    - ES-эффекты — только через `IndexWriter` или доменные события (см. 3.4)
-- [ ] **DocumentVersionService** (CRUD + S3 + нормализация имени + очередь + ES):
+- [ ] **NodeService** (`modules/node/application/node.service.ts`):
+    - `NodeRepository` / `NodeTreeRepository` — уже в `modules/node/domain/` (обёртки над Prisma, включая `getDescendantIds`/CTE)
+    - `NodeTreeService` (`validateParent`, `isDescendant`, `getPath`) — вынести из репозитория
+    - Индексирование — только через `IndexWriter` (`modules/search/domain`) или доменные события (см. 3.4)
+- [ ] **DocumentVersionService** (`modules/document-version/application/document-version.service.ts`):
     - работа с хранилищем — только через интерфейс `FileStorage`
     - `normalizeUploadedFileName` вынести в утилиту
     - постановку в очередь — через интерфейс `ConversionQueue`
-- [ ] **PoliticService** (CRUD групп + доступы к узлам + рекурсивные проверки + пользователи групп):
+- [ ] **PoliticService** (`modules/politic/application/politic.service.ts`):
     - `GroupService` (CRUD, addUsersToGroup, ...)
     - `NodeAccessPolicyService` (`checkUserToNodeAccess`, `resolveNodePermissions`, `hasAdminOnNode`)
 
 ### 3.4 Индексирование — побочный эффект через события (принципы S и O)
 
-Сейчас `NodeService`, `DocumentVersionService` и конвертер напрямую знают об ES-производственных очередях.
-
 - [ ] Ввести доменные события (`NodeCreated`, `NodeUpdated`, `NodeDeleted`, `DocumentVersionConverted`...) через `EventEmitter2` или NestJS events
-- [ ] Слушатели событий ставят задачи на индексирование; доменные сервисы события лишь эмитят
-- [ ] Это же даст чистую точку расширения (принцип O): новый индекс/бэкенд = новый слушатель, без правки сервисов
+- [ ] Слушатели событий ставят задачи на индексирование; доменные сервисы лишь эмитят
 
 ### 3.5 Файловое хранилище за интерфейсом (принцип D)
 
-- [ ] Интерфейс `FileStorage` (`uploadFile`, `uploadBuffer`, `getFileBuffer`, `getFileUrl`, `deleteFile`, `exists`) — `S3Service` становится одной из реализаций
-- [ ] `DocumentVersionService`, `DocumentConversionProcessor`, `FileProviderService` зависят от `FileStorage`, не от `S3Service`
-- [ ] Исправить баг из 0.1: в `FileProviderService.getFileUrl` теряются gRPC-статусы (`status:` вместо `code:` + `catch` проглатывает исключения)
+- [ ] Интерфейс `FileStorage` (`uploadFile`, `uploadBuffer`, `getFileBuffer`, `getFileUrl`, `deleteFile`, `exists`) — `S3Service` (`shared/infrastructure/s3/s3.service.ts`) становится одной из реализаций
+- [ ] `DocumentVersionService`, `DocumentConversionProcessor` (`shared/infrastructure/bullmq/...`), `FileProviderService` зависят от `FileStorage`, не от `S3Service`
 
 ### 3.6 Убрать `any` и включить `strict` инкрементально
 
-- [ ] `LdapStrategy.validate(user: any)` → типизированный payload (см. 2.1)
-- [ ] `AuthService.signIn(req: any)` / `switchRole(req: any)` / `getMe(req: any)` / `signOut(req: any)` → типизированные аргументы (`RequestUser`, DTO); контроллеры передают `@User()`/DTO, а не весь `Request`
-- [ ] `ElasticSearchProducer.* doc: any` → типизированные payload'ы (см. 3.1)
+- [x] `LdapStrategy.validate(user: any)` → типизированный payload (см. 2.1)
+- [ ] `AuthService.signIn(req: any)` / `switchRole(req: any)` / `getMe(req: any)` / `signOut(req: any)` → типизированные аргументы (`RequestUser` из `shared/domain/types`, DTO); контроллеры (`modules/auth/presentation/auth.controller.ts`) передают `@User()`/DTO, а не весь `Request`
 - [ ] Поэтапно включить `strict: true` в `tsconfig.json`, закрывая находки `tsc --noEmit`
 
 ### 3.7 Убрать дублирование логики провижининга пользователя (принцип S)
 
-`AuthService.signIn` и `SyncService.syncUsers` независимо содержат одинаковый `upsert` пользователя (connect роли `User` + `connectOrCreate` political-групп по отделам).
+`AuthService.signIn` (`modules/auth/application/auth.service.ts`) и `SyncService.syncUsers` (`modules/sync/application/sync.service.ts`) ранее независимо содержали одинаковый `upsert` пользователя.
 
-- [ ] Вынести `UserProvisioningService.provisionFromExternal(externalUser)`, использовать в обоих местах
-- [ ] `SyncService` перестать напрямую держать Prisma-логику создания пользователей
+- [x] Вынесено `UserProvisioningService.provisionFromExternal(externalUser)` (`modules/user-provisioning/application/user-provisioning.service.ts`), используется в обоих местах
+- [x] `SyncService` перестал напрямую держать Prisma-логику создания пользователей (через `UserRepository.upsertProvisionedUser` в `modules/user/domain/user.repository.ts`)
 
 ### 3.8 Рекурсия и N+1 запросы
 
-- [ ] `NodeService.delete` — рекурсивный обход с запросом на каждый узел; заменить на `getDescendantIds` (уже есть) + пакетный `deleteMany`
+- [x] `NodeService.delete` — рекурсивный обход заменён на `NodeTreeRepository.recursiveDelete` (Recursive CTE) + пакетный `deleteMany`
 - [ ] `PoliticService.checkUserToNodeAccess` — рекурсия «на каждый родитель» по одному запросу; собрать цепочку nodeIds одним обходом и сделать один `findMany` по `nodeAccess`
-- [ ] `NodeService.getPath` — запрос в цикле; аналогично собрать цепочку за один запрос (upsert-обход)
+- [ ] `NodeService.getPath` — запрос в цикле; собрать цепочку за один запрос
 
 ### 3.9 Типизация очереди BullMQ
 
-- [ ] `DocumentConversionService` использует `Queue` без типа — привести к `Queue<DocumentConversionJobDto>`
+- [ ] `DocumentConversionService` (`shared/infrastructure/bullmq/queues/document-conversion/document-conversion.service.ts`) — привести `Queue` к `Queue<DocumentConversionJobDto>`
 - [ ] Обработчики `onCompleted`/`onFailed` типизировать по `Job<DocumentConversionJobDto>`
 
 ---
@@ -368,11 +268,11 @@ export interface LdapConfig {
 
 ### 4.1 Unit-тесты критичной бизнес-логики
 
-- [ ] `NodeTreeService`: `isDescendant` (вкл. циклы), `validateParent`, `getPath`
-- [ ] `NodeAccessPolicyService`: `resolveNodePermissions` (наследование, циклы), `checkUserToNodeAccess`
-- [ ] `TokenService`: ротация refresh-токена, отклонение replay-токена
-- [ ] `LdapStrategy`: маппинг атрибутов, fallback uid (см. 2.5)
-- [ ] `DocumentConversionProcessor`: успешный путь и путь `FAILED` (мок зависимостей)
+- [ ] `NodeTreeService`: `isDescendant` (вкл. циклы), `validateParent`, `getPath` (`modules/node/domain/`)
+- [ ] `NodeAccessPolicyService`: `resolveNodePermissions` (наследование, циклы), `checkUserToNodeAccess` (`modules/politic/application/`)
+- [ ] `TokenService`: ротация refresh-токена, отклонение replay-токена (`modules/token/application/`)
+- [x] `LdapStrategy`: маппинг атрибутов, fallback uid (см. 2.5)
+- [ ] `DocumentConversionProcessor`: успешный путь и путь `FAILED` (`shared/infrastructure/bullmq/...`)
 
 ### 4.2 E2E-тесты
 
@@ -381,11 +281,39 @@ export interface LdapConfig {
 
 ### 4.3 Документация
 
-- [ ] Обновить `PROJECT_CONTEXT.md` (сейчас устарел: описывает локальный `uploads`, `docker-compose.dev.yml`, не знает про `infrastructure/`, S3, `sync`, `file-provider`, `admin`)
-- [ ] Обновить `README.md`: новые env-переменные (S3, employees API), gRPC-порт 50051
+- [ ] Обновить `PROJECT_CONTEXT.md` (устарел: описывает локальный `uploads`, не знает про `shared/`, S3, `sync`, `file-provider`, `admin`)
+- [ ] Обновить `README.md`: новые env-переменные (S3, employees API), gRPC-порт 50051, структура DDD
 - [ ] Зафиксировать решение по поиску: ES как отдельный микросервис, контракт между ним и API (формат hit'ов, индексы)
 
 ### 4.4 CI
 
 - [ ] Пайплайн: `npm run lint` + `npm test` + `npm run build` перед деплоем (см. `.gitlab-ci.yml`)
 - [ ] После завершения всех фаз: `grep -ri "console.log" src/` — только разрешённые места
+
+---
+
+## 📎 Соответствие старой → новой структуры (справочно)
+
+| Было | Стало |
+| --- | --- |
+| `src/common/guards/*` | `src/shared/presentation/guards/*` |
+| `src/common/decorators/*` | `src/shared/presentation/decorators/*` |
+| `src/common/pipes/*` | `src/shared/presentation/pipes/*` |
+| `src/common/types/*` | `src/shared/domain/types/*` |
+| `src/common/constants.ts` | `src/shared/domain/constants.ts` |
+| `src/common/dto/search/*` | `src/modules/search/presentation/dto/*` |
+| `src/common/interfaces/search/*` | `src/modules/search/domain/*` |
+| `src/infrastructure/s3/*` | `src/shared/infrastructure/s3/*` |
+| `src/infrastructure/logger/*` | `src/shared/infrastructure/logger/*` |
+| `src/infrastructure/context/*` | `src/shared/infrastructure/context/*` |
+| `src/infrastructure/http/clients/*` | `src/shared/infrastructure/http/clients/*` |
+| `src/infrastructure/employees-parser/*` | `src/modules/employees-parser/*` |
+| `src/modules/prisma/*` | `src/shared/infrastructure/prisma/*` |
+| `src/modules/access-control/*` | `src/shared/application/permission/*` |
+| `src/modules/bullmq/*` | `src/shared/infrastructure/bullmq/*` |
+| `src/user-provisioning/*` | `src/modules/user-provisioning/*` |
+| `src/modules/<фича>/<фича>.controller.ts` | `src/modules/<фича>/presentation/<фича>.controller.ts` |
+| `src/modules/<фича>/<фича>.service.ts` | `src/modules/<фича>/application/<фича>.service.ts` |
+| `src/modules/<фича>/<фича>.repository.ts` | `src/modules/<фича>/domain/<фича>.repository.ts` |
+| `src/modules/<фича>/dto/*` | `src/modules/<фича>/presentation/dto/*` |
+| `src/modules/<фича>/types/*` | `src/modules/<фича>/domain/types/*` |

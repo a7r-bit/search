@@ -5,9 +5,7 @@ import { PathPart } from '../../../shared/domain/types/path-part.dto';
 
 @Injectable()
 export class NodeTreeRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) {}
+    constructor(private readonly prisma: PrismaService) {}
 
     async recursiveDelete(id: string) {
         const descendantsId = await this.getDescendantIds(id);
@@ -80,6 +78,22 @@ export class NodeTreeRepository {
         `;
 
         return result[0]?.exists ?? false;
+    }
+
+    async getAncestorChain(nodeId: string): Promise<string[]> {
+        const rows: { id: string }[] = await this.prisma.$queryRaw`
+        WITH RECURSIVE r AS (
+        SELECT id, parent_of, 0 AS depth FROM nodes
+        WHERE id = ${nodeId}::uuid
+        
+        UNION ALL
+
+        SELECT n.id, n.parent_id, r.depth+1 FROM nodes n
+        INNER JOIN r on n.parent_id = r.id
+        )
+        SELECT id FROM r ORDER BY depth ASC; 
+        `;
+        return rows.map((r) => r.id);
     }
 
     async validateParent(parentId: string | null): Promise<{ isValid: boolean; error?: string }> {

@@ -8,10 +8,14 @@ import { ListGroupQueryDto } from '../presentation/dto/list-group-query.dto';
 import { PaginatedGroupResponseDto } from '../presentation/dto/paginated-group-response.dto';
 import { GroupWithAccessesDTO } from '../presentation/dto/group-with-accesses.dto';
 import { UpdateGroupsAccessesDTO } from '../presentation/dto/update-group-access.dto';
+import { NodeTreeRepository } from '../../node/domain/node-tree.repository';
 
 @Injectable()
 export class PoliticService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly nodeTreeRepository: NodeTreeRepository,
+    ) {}
 
     async updateGroupsAccesses(nodeId: string, body: UpdateGroupsAccessesDTO): Promise<GroupWithAccessesDTO[]> {
         const node = await this.prisma.node.findUnique({ where: { id: nodeId } });
@@ -159,26 +163,31 @@ export class PoliticService {
     }
 
     async checkUserToNodeAccess(userPolicies: string[], nodeId: string | null): Promise<boolean> {
-        if (!nodeId) {
-            return true;
-        }
-        const node = await this.prisma.node.findUnique({
-            where: { id: nodeId },
-            select: { id: true, parentId: true },
+        if (!nodeId) return true;
+
+        const chain = await this.nodeTreeRepository.getAncestorChain(nodeId);
+
+        if (chain.length === 0) return false;
+
+        const accesses = await this.prisma.nodeAccess.findMany({
+            where: { nodeId: { in: chain } },
+            select: { nodeId: true, groupId: true },
         });
 
-        if (!node) {
-            return false;
+        const groupsByNode = new Map<string, Set<string>>();
+        for (const a of accesses) {
+            if (!groupsByNode.has(a.nodeId)) groupsByNode.set(a.nodeId, new Set());
+            groupsByNode.get(a.nodeId)!.add(a.groupId);
         }
 
-        const nodePolicies = (await this.getPolicesByNodeId(node.id)).map((p) => p.id);
-
-        if (nodePolicies.length > 0) {
-            const hasMatch = nodePolicies.some((id) => userPolicies.includes(id));
-            return hasMatch;
+        const userPolicySet = new Set(userPolicies);
+        for (const id of chain) {
+            const groupIds = groupsByNode.get(id);
+            if (groupIds && groupIds.size > 0) {
+                return [...groupIds].some((gid) => userPolicySet.has(gid));
+            }
         }
-
-        return this.checkUserToNodeAccess(userPolicies, node.parentId);
+        return true;
     }
 
     async createGroup(createDTO: CreateGroupDTO) {
@@ -208,7 +217,7 @@ export class PoliticService {
     // }
 
     private async isUnique(name: string) {
-        const group = await this.prisma.group.findUnique({
+        const group = await this.prisma.group.findFirst({
             where: {
                 name: name,
             },

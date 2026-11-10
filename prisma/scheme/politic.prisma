@@ -1,6 +1,6 @@
 model Group {
   id         String  @id @default(uuid()) @db.Uuid
-  name       String  @unique
+  name       String
   externalId String? @unique @map("external_id")
 
   access NodeAccess[]
