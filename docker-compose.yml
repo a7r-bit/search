@@ -17,7 +17,6 @@ services:
         image: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
         restart: unless-stopped
         container_name: nest_app
-        pull_policy: always
         command: ['node', 'dist/main.js']
 
         env_file:
