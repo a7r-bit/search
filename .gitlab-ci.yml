@@ -32,7 +32,7 @@ deploy-job:
         - build-migrate-job
         - build-app-job
     environment:
-        name: prod
+        name: dev
     script:
         - test -n "$ENV_FILE" || { echo "ENV_FILE is not set in CI/CD variables"; exit 1; }
         - export COMPOSE_ARGS="--env-file $ENV_FILE"
