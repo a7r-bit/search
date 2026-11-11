@@ -13,6 +13,7 @@ COPY . .
 RUN npm run build
 RUN npm ci --omit=dev && npm cache clean --force
 
+
 # --- runner ---
 FROM dockerhub.mingas.by/node:22-slim AS runner
 
