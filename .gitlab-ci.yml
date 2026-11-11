@@ -17,7 +17,7 @@ maintain-job:
         - search
     script:
         - docker image prune -af
-        - docker builder prune -af --keep-last 1
+        - docker builder prune -af
 
 build-migrate-job:
     stage: build
