@@ -1,5 +1,4 @@
 stages:
-    - maintain
     - build
     - deploy
 
@@ -10,14 +9,6 @@ workflow:
 variables:
     CI_REGISTRY_IMAGE: dockerhub.mingas.by/search
     CI_REGISTRY_IMAGE_MIGRATE: ${CI_REGISTRY_IMAGE}-migrate
-
-maintain-job:
-    stage: maintain
-    tags:
-        - search
-    script:
-        - docker image prune -af
-        - docker builder prune -af
 
 build-migrate-job:
     stage: build
