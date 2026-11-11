@@ -1,5 +1,5 @@
-# --- builder ---
-FROM dockerhub.mingas.by/node:22-slim AS builder
+# FROM dockerhub.mingas.by/node:22-slim AS builder
+FROM dockerhub.mingas.by/node:22-slim
 
 WORKDIR /app
 
