@@ -34,6 +34,7 @@ deploy-job:
     environment:
         name: prod
     script:
+        - test -n "$ENV_FILE" || { echo "ENV_FILE is not set in CI/CD variables"; exit 1; }
         - export COMPOSE_ARGS="--env-file $ENV_FILE"
         - docker compose config -q
         - docker compose --profile migrate run --rm migrate
