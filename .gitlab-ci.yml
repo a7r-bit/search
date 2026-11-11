@@ -11,27 +11,32 @@ variables:
     CI_REGISTRY_IMAGE: dockerhub.mingas.by/search
     CI_REGISTRY_IMAGE_MIGRATE: ${CI_REGISTRY_IMAGE}-migrate
 
-tags:
-    - search
-
 maintain-job:
     stage: maintain
+    tags:
+        - search
     script:
         - docker image prune -af
         - docker builder prune -af --keep-last 1
 
 build-migrate-job:
     stage: build
+    tags:
+        - search
     script:
         - docker build -f ./docker/Dockerfile.migrate -t ${CI_REGISTRY_IMAGE_MIGRATE}:$CI_COMMIT_SHORT_SHA .
 
 build-app-job:
     stage: build
+    tags:
+        - search
     script:
         - docker build -f ./docker/Dockerfile --target runner -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
 
 deploy-job:
     stage: deploy
+    tags:
+        - search
     needs:
         - build-migrate-job
         - build-app-job
