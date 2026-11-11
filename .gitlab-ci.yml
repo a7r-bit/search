@@ -23,7 +23,7 @@ build-app-job:
     tags:
         - search
     script:
-        - docker build -f ./docker/Dockerfile --target runner --build-arg BUILDKIT_INLINE_CACHE=1 -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+        - docker build -f ./docker/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
 
 deploy-job:
     stage: deploy
