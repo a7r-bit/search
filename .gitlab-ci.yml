@@ -2,44 +2,45 @@ stages:
     - build
     - deploy
 
-workflow:
-    rules:
-        - if: '$CI_COMMIT_BRANCH == "dev"'
-
 variables:
-    CI_REGISTRY_IMAGE: dockerhub.mingas.by/search
-    CI_REGISTRY_IMAGE_MIGRATE: ${CI_REGISTRY_IMAGE}-migrate
+    SHORT_NAME: search
+    CI_REGISTRY_IMAGE: dockerhub.mingas.by/${SHORT_NAME}
+    CI_REGISTRY_IMAGE_MIGRATE: dockerhub.mingas.by/${SHORT_NAME}-migrate
 
 build-migrate-job:
     stage: build
+    only:
+        - dev
     tags:
         - search
     script:
-        - docker build -f ./docker/Dockerfile.migrate -t ${CI_REGISTRY_IMAGE_MIGRATE}:$CI_COMMIT_SHORT_SHA .
+        - docker build -f ./docker/Dockerfile.migrate --build-arg BUILDKIT_INLINE_CACHE=1 -t ${CI_REGISTRY_IMAGE_MIGRATE}:$CI_COMMIT_SHORT_SHA .
 
 build-app-job:
     stage: build
+    only:
+        - dev
     tags:
         - search
     script:
-        - docker build -f ./docker/Dockerfile --target runner -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
+        - docker build -f ./docker/Dockerfile --target runner --build-arg BUILDKIT_INLINE_CACHE=1 -t ${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHORT_SHA .
 
 deploy-job:
     stage: deploy
-    tags:
-        - search
     needs:
         - build-migrate-job
         - build-app-job
+    only:
+        - dev
+    tags:
+        - search
+    script:
+        - export CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE
+        - export CI_REGISTRY_IMAGE_MIGRATE=$CI_REGISTRY_IMAGE_MIGRATE
+        - export CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA
+        - docker compose --env-file "$ENV_FILE" config -q
+        - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
+        - docker compose --env-file "$ENV_FILE" up -d
+        - docker system prune -a -f
     environment:
         name: dev
-    script:
-        - test -n "$ENV_FILE" || { echo "ENV_FILE is not set in CI/CD variables"; exit 1; }
-        - echo "--- env file keys ---" && grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" | sort -u
-        - test -n "$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" | head -1)" || { echo "env file has no KEY=VALUE lines"; exit 1; }
-        - sed -e '1s/^\xef\xbb\xbf//' -e 's/^export //' -e 's/\r$//' "$ENV_FILE" > "${ENV_FILE}.clean"
-        - export ENV_FILE="${ENV_FILE}.clean"
-        - export COMPOSE_ARGS="--env-file $ENV_FILE"
-        - docker compose config -q
-        - docker compose --profile migrate run --rm migrate
-        - docker compose up -d
