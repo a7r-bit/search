@@ -36,7 +36,7 @@ deploy-job:
     script:
         - test -n "$ENV_FILE" || { echo "ENV_FILE is not set in CI/CD variables"; exit 1; }
         - echo "--- env file keys ---" && grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" | sort -u
-        - test -n "$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" | head -1)" || { echo "env file: no KEY=VALUE lines found"; exit 1; }
+        - test -n "$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" | head -1)" || { echo "env file has no KEY=VALUE lines"; exit 1; }
         - sed -e '1s/^\xef\xbb\xbf//' -e 's/^export //' -e 's/\r$//' "$ENV_FILE" > "${ENV_FILE}.clean"
         - export ENV_FILE="${ENV_FILE}.clean"
         - export COMPOSE_ARGS="--env-file $ENV_FILE"
