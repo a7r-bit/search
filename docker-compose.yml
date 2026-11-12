@@ -44,9 +44,20 @@ services:
                 condition: service_healthy
             gotenberg:
                 condition: service_started
+
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=web'
+            - 'traefik.http.routers.nest-app.rule=Host(${DNS_NAME}) && (PathPrefix(/api) || PathPrefix(/docs))'
+            - 'traefik.http.routers.nest-app.entrypoints=websecure'
+            - 'traefik.http.routers.nest-app.tls=true'
+            - 'traefik.http.routers.nest-app.tls.certresolver=myresolver'
+            - 'traefik.http.routers.nest-app.priority=20'
+            - 'traefik.http.services.nest-app.loadbalancer.server.port=${PORT}'
+
         networks:
             - default
-            - search_network
+            - web
 
     postgres:
         image: dockerhub.mingas.by/postgres:15.2
@@ -98,4 +109,5 @@ volumes:
     pgdata:
 
 networks:
-    search_network:
+    web:
+        external: true

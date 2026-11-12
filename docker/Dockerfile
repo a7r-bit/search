@@ -1,4 +1,3 @@
-# FROM dockerhub.mingas.by/node:22-slim AS builder
 FROM dockerhub.mingas.by/node:22-slim
 
 WORKDIR /app
@@ -11,20 +10,8 @@ RUN npm ci
 COPY . .
 
 RUN npm run build
-# RUN npm ci --omit=dev && npm cache clean --force
 
-# # --- runner ---
-# FROM dockerhub.mingas.by/node:22-slim AS runner
-
-# WORKDIR /app
-# ENV NODE_ENV=production
-
-# COPY package*.json ./
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/dist ./dist
-# COPY --from=builder /app/prisma ./prisma
-
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "dist/main.js"]
 
