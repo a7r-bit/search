@@ -1,7 +1,9 @@
-import { Controller, Delete, Get, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Delete, Get, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiBadRequestResponse,
+    ApiBearerAuth,
     ApiBody,
     ApiConsumes,
     ApiNotFoundResponse,
@@ -11,6 +13,7 @@ import {
     ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
+import { Public } from '../../../shared/presentation/decorators/public.decorator';
 import { S3Service } from './s3.service';
 
 class S3FileExistsResponseDto {
@@ -40,6 +43,7 @@ class S3UploadFileRequestDto {
 
 @Controller('s3')
 @ApiTags('S3')
+@ApiBearerAuth('access-token')
 export class S3Controller {
     constructor(private readonly s3Service: S3Service) {}
 
@@ -73,14 +77,31 @@ export class S3Controller {
     @Get('getFile')
     @ApiOperation({
         summary: 'Получить временную ссылку на файл',
-        description: 'Возвращает подписанный URL для доступа к файлу по ключу в S3.',
+        description: 'Возвращает URL для доступа к файлу по ключу в S3.',
     })
     @ApiQuery({ name: 'key', description: 'Ключ файла в S3', required: true, type: String })
-    @ApiOkResponse({ description: 'Подписанная ссылка на файл', type: S3GetFileUrlResponseDto })
+    @ApiOkResponse({ description: 'Ссылка на файл', type: S3GetFileUrlResponseDto })
     @ApiNotFoundResponse({ description: 'Файл с указанным ключом не найден' })
     @ApiBadRequestResponse({ description: 'Не передан ключ файла' })
     async getFile(@Query('key') key: string): Promise<S3GetFileUrlResponseDto> {
         return this.s3Service.getFileUrl(key);
+    }
+
+    @Get('file')
+    @Public()
+    @ApiOperation({
+        summary: 'Скачать файл',
+        description: 'Возвращает содержимое файла из S3 по ключу (прокси: браузер не ходит в MinIO напрямую).',
+    })
+    @ApiQuery({ name: 'key', description: 'Ключ файла в S3', required: true, type: String })
+    @ApiOkResponse({ description: 'Содержимое файла' })
+    @ApiNotFoundResponse({ description: 'Файл с указанным ключом не найден' })
+    @ApiBadRequestResponse({ description: 'Не передан ключ файла' })
+    async downloadFile(@Query('key') key: string, @Res() res: Response) {
+        const { buffer, contentType } = await this.s3Service.getFileForDownload(key);
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
     }
 
     @Delete('deleteFile')

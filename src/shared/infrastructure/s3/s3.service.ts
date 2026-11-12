@@ -1,6 +1,5 @@
 import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
@@ -20,6 +19,7 @@ export class S3Service {
     private readonly forcePathStyle: boolean;
     private readonly tlsRejectUnauthorized: boolean;
     private readonly caBundlePath?: string;
+    private readonly publicUrl: string;
     public readonly s3Client: S3Client;
 
     constructor(private config: ConfigService) {
@@ -31,6 +31,7 @@ export class S3Service {
         this.forcePathStyle = (this.config.get<string>('AWS_S3_FORCE_PATH_STYLE') ?? 'false').toLowerCase() === 'true';
         this.tlsRejectUnauthorized = (this.config.get<string>('AWS_S3_TLS_REJECT_UNAUTHORIZED') ?? 'true').toLowerCase() !== 'false';
         this.caBundlePath = this.config.get<string>('AWS_S3_CA_BUNDLE_PATH') || undefined;
+        this.publicUrl = (this.config.get<string>('APP_PUBLIC_URL') ?? '').replace(/\/+$/, '');
 
         const httpsAgent = new https.Agent({
             keepAlive: true,
@@ -85,18 +86,28 @@ export class S3Service {
         return { key };
     }
 
-    async getFileUrl(key: string, expiresIn = 3600) {
-        const command = new GetObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-        });
-
+    async getFileUrl(key: string, _expiresIn = 3600) {
         if (!(await this.checkFileExists(key))) {
             throw new NotFoundException('File not found');
         }
 
-        const url = await getSignedUrl(this.s3Client, command, { expiresIn });
-        return { url };
+        return { url: `${this.publicUrl}/api/s3/file?key=${encodeURIComponent(key)}` };
+    }
+
+    async getFileForDownload(key: string): Promise<{ buffer: Buffer; contentType: string }> {
+        if (!(await this.checkFileExists(key))) {
+            throw new NotFoundException('File not found');
+        }
+
+        const [head, response] = await Promise.all([
+            this.s3Client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key })),
+            this.s3Client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key })),
+        ]);
+
+        return {
+            buffer: Buffer.from(await response.Body?.transformToByteArray()),
+            contentType: head.ContentType ?? 'application/octet-stream',
+        };
     }
 
     async getFileBuffer(key: string): Promise<Buffer> {

@@ -18,7 +18,6 @@ import { PathPart } from '../../../shared/domain/types/path-part.dto';
 export class NodeService {
     constructor(
         private readonly documentVersionService: DocumentVersionService,
-        // New services
         private readonly nodeRepository: NodeRepository,
         private readonly nodeTreeRepository: NodeTreeRepository,
         private readonly permissionResolverService: PermissionResolverService,
