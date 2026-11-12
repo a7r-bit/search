@@ -41,6 +41,6 @@ deploy-job:
         - docker compose --env-file "$ENV_FILE" config -q
         - docker compose --env-file "$ENV_FILE" --profile migrate run --rm migrate
         - docker compose --env-file "$ENV_FILE" up -d
-        - docker system prune -a -f
+        # - docker system prune -a -f
     environment:
         name: dev
