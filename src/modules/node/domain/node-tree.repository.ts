@@ -83,7 +83,7 @@ export class NodeTreeRepository {
     async getAncestorChain(nodeId: string): Promise<string[]> {
         const rows: { id: string }[] = await this.prisma.$queryRaw`
         WITH RECURSIVE r AS (
-        SELECT id, parent_of, 0 AS depth FROM nodes
+        SELECT id, parent_id, 0 AS depth FROM nodes
         WHERE id = ${nodeId}::uuid
         
         UNION ALL
