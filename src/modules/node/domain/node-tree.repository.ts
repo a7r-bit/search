@@ -97,7 +97,7 @@ export class NodeTreeRepository {
     }
 
     async validateParent(parentId: string | null): Promise<{ isValid: boolean; error?: string }> {
-        if (!parentId) return;
+        if (!parentId) return { isValid: true };
         const parent = await this.prisma.node.findUnique({
             where: { id: parentId },
             select: { id: true, type: true },

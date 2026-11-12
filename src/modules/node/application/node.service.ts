@@ -133,9 +133,9 @@ export class NodeService {
     }
 
     private async isUnique(name: string, type: NodeType, parentId: string | null) {
-        const existing = await this.nodeRepository.isUnique(name, type, parentId);
+        const isUnique = await this.nodeRepository.isUnique(name, type, parentId);
 
-        if (existing) {
+        if (!isUnique) {
             throw new BadRequestException(`В текущей дикеткории уже существоет элемент с название: ${name}`);
         }
     }
