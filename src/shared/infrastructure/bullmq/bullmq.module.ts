@@ -4,6 +4,7 @@ import { DocumentConversionProcessor } from './queues/document-conversion/docume
 import { DocumentConversionService } from './queues/document-conversion/document-conversion.service';
 import { GotenbergModule } from '../../../modules/gotenberg/gotenberg.module';
 import { PdfModule } from '../../../modules/pdf/pdf.module';
+import { SearchModule } from '../../../modules/search/search.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { S3Module } from '../s3/s3.module';
 
@@ -36,6 +37,7 @@ import { S3Module } from '../s3/s3.module';
         GotenbergModule,
         PdfModule,
         S3Module,
+        SearchModule,
     ],
     providers: [DocumentConversionProcessor, DocumentConversionService],
     exports: [DocumentConversionService],

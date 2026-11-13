@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateDocumentVersionDto } from '../presentation/dto/create-document-version.dto';
 import { UpdateDocumentVersionDto } from '../presentation/dto/update-document-version.dto';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
@@ -6,22 +6,66 @@ import { DocumentConversionService } from '../../../shared/infrastructure/bullmq
 import path from 'path';
 import { DocumentVersionDto } from '../presentation/dto/document-version.dto';
 import { DocumentVersionFilterDto } from '../presentation/dto/document_version_filter_dto ';
-import { Prisma } from '@prisma/client';
+import { Node, Prisma } from '@prisma/client';
 import { SortingParam } from '../../../shared/presentation/decorators/sorting-params.decorator';
 import { S3Service } from '../../../shared/infrastructure/s3/s3.service';
+import { INDEX_WRITER, IndexWriter } from '../../search/domain/index-writer.interface';
+import { SearchIndexPayload } from '../../search/domain/search-payload.interface';
+import { Kind } from '../../search/presentation/dto/search.types';
 
 @Injectable()
 export class DocumentVersionService {
+    private readonly logger = new Logger(DocumentVersionService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly documentConversionService: DocumentConversionService,
         private readonly s3Service: S3Service,
+        @Inject(INDEX_WRITER) private readonly indexWriter: IndexWriter,
     ) {}
 
     private normalizeUploadedFileName(fileName: string): string {
         const decoded = Buffer.from(fileName, 'latin1').toString('utf8');
         const hasMojibake = /[ÐÑ]/.test(fileName);
         return hasMojibake ? decoded : fileName;
+    }
+
+    private buildIndexPayload(node: Node, fileName: string, content?: string): SearchIndexPayload {
+        return {
+            externalId: node.id,
+            kind: Kind.DOCUMENT,
+            title: fileName,
+            ...(content ? { content } : {}),
+            ...(node.parentId ? { parentId: node.parentId } : {}),
+            createdAt: node.createdAt.toISOString(),
+        };
+    }
+
+    private async indexDocumentNode(node: Node, fileName: string): Promise<void> {
+        try {
+            await this.indexWriter.index(this.buildIndexPayload(node, fileName));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Не удалось заиндексировать документ ${node.id}: ${message}`);
+        }
+    }
+
+    private async updateDocumentNodeIndex(node: Node, fileName: string): Promise<void> {
+        try {
+            await this.indexWriter.update(this.buildIndexPayload(node, fileName));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Не удалось обновить индекс документа ${node.id}: ${message}`);
+        }
+    }
+
+    private async removeDocumentNodeFromIndex(nodeId: string): Promise<void> {
+        try {
+            await this.indexWriter.delete({ externalId: nodeId, kind: Kind.DOCUMENT });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Не удалось удалить документ ${nodeId} из индекса: ${message}`);
+        }
     }
 
     private async getLastVersion(nodeId: string, tx: Prisma.TransactionClient): Promise<number> {
@@ -146,6 +190,7 @@ export class DocumentVersionService {
             });
         });
         await this.documentConversionService.addConversionJob({ documentVersionId: documentVersion.id, key: key, isPDF });
+        await this.indexDocumentNode(node, path.basename(normalizedFileName));
 
         return new DocumentVersionDto(documentVersion);
     }
@@ -192,6 +237,13 @@ export class DocumentVersionService {
             },
         });
 
+        if (isFileNameChanged) {
+            const node = await this.prisma.node.findUnique({ where: { id: documentVersion.nodeId } });
+            if (node) {
+                await this.updateDocumentNodeIndex(node, fileName);
+            }
+        }
+
         return new DocumentVersionDto(updatedDocumentVersion);
     }
 
@@ -204,6 +256,7 @@ export class DocumentVersionService {
         if (deletedDocument.mediaFile) {
             await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath);
         }
+        await this.removeDocumentNodeFromIndex(deletedDocument.nodeId);
         return new DocumentVersionDto(deletedDocument);
     }
 
@@ -225,6 +278,7 @@ export class DocumentVersionService {
                 await this.s3Service.deleteFile(doc.mediaFile.filePath);
             }
         }
+        await this.removeDocumentNodeFromIndex(node.id);
 
         return deletedDocuments.map((el) => new DocumentVersionDto(el));
     }

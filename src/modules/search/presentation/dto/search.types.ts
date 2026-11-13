@@ -1,9 +1,14 @@
 export enum Kind {
-    DOCUMENT = 'DOCUMENT',
-    FOLDER = 'FOLDER',
-    UNSPECIFIED = 'UNSPECIFIED',
+    DOCUMENT = 'document',
+    FOLDER = 'folder',
+    UNSPECIFIED = 'unspecified',
 }
 
 export enum MatchType {
-    MILTI_MATCH = 'MILTI_MATCH',
+    MULTI_MATCH = 'multi_match',
+}
+
+export enum SortBy {
+    SCORE = '_score',
+    CREATED_AT = 'createdAt',
 }

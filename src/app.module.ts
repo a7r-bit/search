@@ -14,6 +14,7 @@ import { LikedNodeModule } from './modules/liked-node/liked-node.module';
 import { NodeModule } from './modules/node/node.module';
 import { PoliticModule } from './modules/politic/politic.module';
 import { RoleModule } from './modules/role/role.module';
+import { SearchModule } from './modules/search/search.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { TokenModule } from './modules/token/token.module';
 import { UserModule } from './modules/user/user.module';
@@ -34,6 +35,7 @@ import { UserProvisioningModule } from './modules/user-provisioning/user-provisi
         DocumentVersionModule,
         LikedNodeModule,
         PoliticModule,
+        SearchModule,
         EmployeesParserModule,
         S3Module,
         FileProviderModule,

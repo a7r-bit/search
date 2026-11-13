@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SearchReader } from '../domain/search-reader.interface';
 import { IndexWriter } from '../domain/index-writer.interface';
-import { SearchIndexPayload, SearchUpdatePayload, SearchDeletePayload } from '../domain/search-payload.interface';
+import { SearchIndexPayload, SearchDeletePayload } from '../domain/search-payload.interface';
 import { SearchResult } from '../presentation/dto/search-hit.dto';
 import { SearchQuery } from '../presentation/dto/search-query.dto';
 import { SearchApiClient } from '../../../shared/infrastructure/http/clients/search-api.client';
@@ -18,7 +18,7 @@ export class SearchService implements IndexWriter, SearchReader {
         return this.searchClient.index(entity);
     }
 
-    async update(entity: SearchUpdatePayload): Promise<void> {
+    async update(entity: SearchIndexPayload): Promise<void> {
         return this.searchClient.update(entity);
     }
 

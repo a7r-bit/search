@@ -8,6 +8,8 @@ import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
 import { S3Service } from '../../../s3/s3.service';
 import path from 'path';
 import { LoggerKey } from '../../../logger/domain/logger';
+import { INDEX_WRITER, IndexWriter } from '../../../../../modules/search/domain/index-writer.interface';
+import { Kind } from '../../../../../modules/search/presentation/dto/search.types';
 
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
@@ -17,6 +19,7 @@ export class DocumentConversionProcessor extends WorkerHost {
         private readonly gotenbergService: GotenbergService,
         private readonly pdfService: PdfService,
         private readonly s3Service: S3Service,
+        @Inject(INDEX_WRITER) private readonly indexWriter: IndexWriter,
     ) {
         super();
     }
@@ -53,6 +56,41 @@ export class DocumentConversionProcessor extends WorkerHost {
         this.logger.log(`🧧Файл для конвертации на пути ${mediaFile.filePath}`);
 
         this.logger.log(`🤞 Документ версии ${documentVersionId} успешно конвертирован`);
+
+        await this.indexConvertedDocument(documentVersionId, pdfBuffer);
+    }
+
+    private async indexConvertedDocument(documentVersionId: string, pdfBuffer: Buffer): Promise<void> {
+        try {
+            const documentVersion = await this.prisma.documentVersion.findUnique({
+                where: { id: documentVersionId },
+                include: { node: true, mediaFile: true },
+            });
+            if (!documentVersion?.node) {
+                return;
+            }
+            const node = documentVersion.node;
+
+            let content: string | undefined;
+            try {
+                content = await this.pdfService.extractTextFromPdfByBuffer(pdfBuffer);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                this.logger.warn(`Не удалось извлечь текст из PDF версии ${documentVersionId}: ${message}`);
+            }
+
+            await this.indexWriter.update({
+                externalId: node.id,
+                kind: Kind.DOCUMENT,
+                title: documentVersion.mediaFile?.fileName ?? node.name,
+                ...(content ? { content } : {}),
+                ...(node.parentId ? { parentId: node.parentId } : {}),
+                createdAt: node.createdAt.toISOString(),
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Не удалось обновить индекс после конвертации ${documentVersionId}: ${message}`);
+        }
     }
 
     @OnWorkerEvent('completed')

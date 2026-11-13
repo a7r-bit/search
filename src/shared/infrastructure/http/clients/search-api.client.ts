@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
-import { SearchIndexPayload, SearchUpdatePayload, SearchDeletePayload } from '../../../../modules/search/domain/search-payload.interface';
+import { SearchIndexPayload, SearchDeletePayload } from '../../../../modules/search/domain/search-payload.interface';
 import { SearchResult } from '../../../../modules/search/presentation/dto/search-hit.dto';
 import { SearchQuery } from '../../../../modules/search/presentation/dto/search-query.dto';
 
@@ -19,7 +19,7 @@ export class SearchApiClient {
         }
 
         this.client = axios.create({
-            baseURL: this.config.get<string>('SEARCH_SERVICE_URL'),
+            baseURL: this.baseUrl,
             headers: {
                 'x-tenant-id': this.tenantId,
             },
@@ -27,19 +27,29 @@ export class SearchApiClient {
     }
 
     async search(query: SearchQuery): Promise<SearchResult> {
-        const { data } = await this.client.post<SearchResult>('/search', query);
+        const { data } = await this.client.get<SearchResult>('/search/query', {
+            params: {
+                query: query.query,
+                kind: query.kind,
+                externalIds: query.externalIds,
+                matchType: query.matchType,
+                page: query.page,
+                limit: query.limit,
+                sortBy: query.sortBy,
+            },
+        });
         return data;
     }
 
     async index(payload: SearchIndexPayload): Promise<void> {
-        await this.client.post('/index', payload);
+        await this.client.post('/search/index', payload);
     }
 
-    async update(payload: SearchUpdatePayload): Promise<void> {
-        await this.client.put('/update', payload);
+    async update(payload: SearchIndexPayload): Promise<void> {
+        await this.client.post('/search/update', payload);
     }
 
     async delete(payload: SearchDeletePayload): Promise<void> {
-        await this.client.delete(`/delete/${payload.externalId}`);
+        await this.client.delete('/search/delete', { data: payload });
     }
 }
