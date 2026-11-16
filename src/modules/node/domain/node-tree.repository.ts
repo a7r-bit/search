@@ -99,13 +99,13 @@ export class NodeTreeRepository {
         WITH RECURSIVE r AS (
         SELECT id, parent_id, 0 AS depth FROM nodes
         WHERE id = ${nodeId}::uuid
-        
+
         UNION ALL
 
         SELECT n.id, n.parent_id, r.depth+1 FROM nodes n
-        INNER JOIN r on n.parent_id = r.id
+        INNER JOIN r on r.parent_id = n.id
         )
-        SELECT id FROM r ORDER BY depth ASC; 
+        SELECT id FROM r ORDER BY depth ASC;
         `;
         return rows.map((r) => r.id);
     }

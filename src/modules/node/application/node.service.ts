@@ -13,6 +13,7 @@ import { SortingParam } from '../../../shared/presentation/decorators/sorting-pa
 import { TreeItemDto } from '../presentation/dto/tree-item.dto';
 import { PermissionResolverService } from '../../../shared/application/permission/permission-resolver.service';
 import { PathPart } from '../../../shared/domain/types/path-part.dto';
+import { PoliticService } from '../../politic/application/politic.service';
 
 @Injectable()
 export class NodeService {
@@ -21,6 +22,7 @@ export class NodeService {
         private readonly nodeRepository: NodeRepository,
         private readonly nodeTreeRepository: NodeTreeRepository,
         private readonly permissionResolverService: PermissionResolverService,
+        private readonly politicService: PoliticService,
     ) {}
 
     async getPath(id: string): Promise<PathPart[]> {
@@ -39,8 +41,14 @@ export class NodeService {
     }
 
     async listChildren(query: ListNodesQueryDto, userReq: RequestUser, sort: SortingParam): Promise<TreeItemDto[]> {
-        const nodes = await this.nodeRepository.listChildren(query, sort);
         const isOwner = userReq.activeRole === 'Owner';
+
+        // Нет доступа к родительской директории — пустой список (фронт отобразит пустую папку), не 403
+        if (!isOwner && !(await this.politicService.checkUserToNodeAccess(userReq.politicGroups, query.parentId ?? null))) {
+            return [];
+        }
+
+        const nodes = await this.nodeRepository.listChildren(query, sort);
 
         const childrenWithPermissions = await Promise.all(
             nodes.map(async (node) => {

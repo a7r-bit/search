@@ -56,11 +56,14 @@ describe('NodeTreeRepository', () => {
     });
 
     describe('getAncestorChain', () => {
-        it('uses parent_id column in SQL and returns chain ids', async () => {
+        it('walks upward (join r.parent_id = n.id) and returns chain ids', async () => {
             prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) => {
                 const sql = strings.join('');
                 expect(sql).toContain('parent_id');
                 expect(sql).not.toContain('parent_of');
+                // обход вверх к корню: n — родитель r; не вниз (n.parent_id = r.id)
+                expect(sql).toContain('r.parent_id = n.id');
+                expect(sql).not.toContain('n.parent_id = r.id');
                 return Promise.resolve([{ id: 'root-id' }, { id: 'node-id' }]);
             });
 

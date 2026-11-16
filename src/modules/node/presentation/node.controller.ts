@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
 import { NodeService } from '../application/node.service';
 import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
@@ -11,7 +11,6 @@ import { ApiSortingQuery } from '../../../shared/presentation/decorators/sorting
 import { SortingParams, SortingParam } from '../../../shared/presentation/decorators/sorting-params.decorator';
 import { PathPart } from '../../../shared/domain/types/path-part.dto';
 import { CustomParseUUIDPipe } from '../../../shared/presentation/pipes/custom-parse-uuid.pipe';
-import { CheckGroupPolitic } from '../../../shared/presentation/guards/group-politic.guard';
 import { RequestUser } from '../../../shared/domain/types/request-user';
 import { TreeItemDto } from './dto/tree-item.dto';
 
@@ -40,11 +39,11 @@ export class NodeController {
         summary: 'Получить дочерние элементы',
         description: `Возвращает дочерние элементы директории с правами доступа для текущего пользователя.
 Если пользователь является owner, возвращаются все дочерние элементы.
-Если пользователь не является owner, возвращаются только доступные ему элементы.`,
+Если пользователь не является owner, возвращаются только доступные ему элементы.
+Если у пользователя нет доступа к родительской директории, возвращается пустой список.`,
     })
     @ApiOkResponse({ description: 'Список дочерних элементов дерева', type: TreeItemDto, isArray: true })
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
-    @UseGuards(CheckGroupPolitic)
     async findChildren(
         @Query() query: ListNodesQueryDto,
         @Req() req,
