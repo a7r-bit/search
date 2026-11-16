@@ -80,7 +80,7 @@ export class DocumentConversionProcessor extends WorkerHost {
             }
 
             await this.indexWriter.update({
-                externalId: node.id,
+                externalId: documentVersion.id,
                 kind: Kind.DOCUMENT,
                 title: documentVersion.mediaFile?.fileName ?? node.name,
                 ...(content ? { content } : {}),

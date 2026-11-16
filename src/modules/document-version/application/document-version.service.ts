@@ -30,9 +30,11 @@ export class DocumentVersionService {
         return hasMojibake ? decoded : fileName;
     }
 
-    private buildIndexPayload(node: Node, fileName: string, content?: string): SearchIndexPayload {
+    // Индексация по версиям: каждая версия — отдельная запись (externalId = version.id),
+    // новые версии не перезаписывают старые
+    private buildIndexPayload(documentVersionId: string, node: Node, fileName: string, content?: string): SearchIndexPayload {
         return {
-            externalId: node.id,
+            externalId: documentVersionId,
             kind: Kind.DOCUMENT,
             title: fileName,
             ...(content ? { content } : {}),
@@ -41,30 +43,30 @@ export class DocumentVersionService {
         };
     }
 
-    private async indexDocumentNode(node: Node, fileName: string): Promise<void> {
+    private async indexDocumentVersion(documentVersionId: string, node: Node, fileName: string): Promise<void> {
         try {
-            await this.indexWriter.index(this.buildIndexPayload(node, fileName));
+            await this.indexWriter.index(this.buildIndexPayload(documentVersionId, node, fileName));
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`Не удалось заиндексировать документ ${node.id}: ${message}`);
+            this.logger.warn(`Не удалось заиндексировать версию ${documentVersionId}: ${message}`);
         }
     }
 
-    private async updateDocumentNodeIndex(node: Node, fileName: string): Promise<void> {
+    private async updateDocumentVersionIndex(documentVersionId: string, node: Node, fileName: string): Promise<void> {
         try {
-            await this.indexWriter.update(this.buildIndexPayload(node, fileName));
+            await this.indexWriter.update(this.buildIndexPayload(documentVersionId, node, fileName));
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`Не удалось обновить индекс документа ${node.id}: ${message}`);
+            this.logger.warn(`Не удалось обновить индекс версии ${documentVersionId}: ${message}`);
         }
     }
 
-    private async removeDocumentNodeFromIndex(nodeId: string): Promise<void> {
+    private async removeDocumentVersionFromIndex(documentVersionId: string): Promise<void> {
         try {
-            await this.indexWriter.delete({ externalId: nodeId, kind: Kind.DOCUMENT });
+            await this.indexWriter.delete({ externalId: documentVersionId, kind: Kind.DOCUMENT });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`Не удалось удалить документ ${nodeId} из индекса: ${message}`);
+            this.logger.warn(`Не удалось удалить версию ${documentVersionId} из индекса: ${message}`);
         }
     }
 
@@ -190,7 +192,7 @@ export class DocumentVersionService {
             });
         });
         await this.documentConversionService.addConversionJob({ documentVersionId: documentVersion.id, key: key, isPDF });
-        await this.indexDocumentNode(node, path.basename(normalizedFileName));
+        await this.indexDocumentVersion(documentVersion.id, node, path.basename(normalizedFileName));
 
         return new DocumentVersionDto(documentVersion);
     }
@@ -240,7 +242,7 @@ export class DocumentVersionService {
         if (isFileNameChanged) {
             const node = await this.prisma.node.findUnique({ where: { id: documentVersion.nodeId } });
             if (node) {
-                await this.updateDocumentNodeIndex(node, fileName);
+                await this.updateDocumentVersionIndex(id, node, fileName);
             }
         }
 
@@ -256,7 +258,7 @@ export class DocumentVersionService {
         if (deletedDocument.mediaFile) {
             await this.s3Service.deleteFile(deletedDocument.mediaFile.filePath);
         }
-        await this.removeDocumentNodeFromIndex(deletedDocument.nodeId);
+        await this.removeDocumentVersionFromIndex(deletedDocument.id);
         return new DocumentVersionDto(deletedDocument);
     }
 
@@ -277,8 +279,8 @@ export class DocumentVersionService {
             if (doc.mediaFile) {
                 await this.s3Service.deleteFile(doc.mediaFile.filePath);
             }
+            await this.removeDocumentVersionFromIndex(doc.id);
         }
-        await this.removeDocumentNodeFromIndex(node.id);
 
         return deletedDocuments.map((el) => new DocumentVersionDto(el));
     }
