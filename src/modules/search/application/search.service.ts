@@ -28,21 +28,22 @@ export class SearchService implements IndexWriter, SearchReader {
      */
     async searchDetailed(query: SearchQuery): Promise<SearchResultDto> {
         const raw = await this.searchClient.search(query);
+
         // Микросервис отдаёт богатые хиты (externalId/kind/score/title/highlight),
         // нормализуем под единый формат (совместимо и со строочным контрактом)
         const hits: SearchRawHit[] = (raw.items ?? []).map((item) => (typeof item === 'string' ? { externalId: item } : item));
         const ids = hits.map((hit) => hit.externalId);
 
-        const [nodes, versions] = await Promise.all([
-            this.prisma.node.findMany({ where: { id: { in: ids } } }),
-            this.prisma.documentVersion.findMany({
-                where: { id: { in: ids } },
-                include: { mediaFile: true },
-            }),
-        ]);
-
-        const nodeById = new Map(nodes.map((node) => [node.id, node]));
+        const versions = await this.prisma.documentVersion.findMany({
+            where: { id: { in: ids } },
+            include: { mediaFile: true },
+        });
         const versionById = new Map(versions.map((version) => [version.id, version]));
+
+        // У хитов документов ID ноды известен только через версию; у хитов папок externalId — это ID ноды
+        const nodeIds = [...new Set(hits.map((hit) => versionById.get(hit.externalId)?.nodeId ?? hit.externalId))];
+        const nodes = await this.prisma.node.findMany({ where: { id: { in: nodeIds } } });
+        const nodeById = new Map(nodes.map((node) => [node.id, node]));
 
         const items = hits
             .map((hit): SearchHitDto | null => {
