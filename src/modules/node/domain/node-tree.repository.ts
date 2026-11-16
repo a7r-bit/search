@@ -28,6 +28,20 @@ export class NodeTreeRepository {
         return descendants.map((descendant: { id: string }) => descendant.id);
     }
 
+    async getDescendantDocumentIds(nodeId: string): Promise<string[]> {
+        const descendants: { id: string }[] = await this.prisma.$queryRaw`
+        WITH RECURSIVE r AS (
+        SELECT id, type FROM nodes WHERE id = ${nodeId}::uuid
+        UNION ALL
+        SELECT n.id, n.type
+        FROM nodes n
+        INNER JOIN r ON n.parent_id = r.id
+        )
+        SELECT id FROM r WHERE type = 'DOCUMENT';
+        `;
+        return descendants.map((descendant: { id: string }) => descendant.id);
+    }
+
     async getPath(id: string | null): Promise<PathPart[]> {
         if (!id) return [];
         const nodes: { id: string; name: string }[] = await this.prisma.$queryRaw`

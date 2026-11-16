@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { toNodeDto } from '../presentation/dto/node-dto.mapper';
 import { NodeDto } from '../presentation/dto/node.dto';
 import { DocumentVersionService } from '../../document-version/application/document-version.service';
@@ -104,31 +104,26 @@ export class NodeService {
         return toNodeDto(moved);
     }
 
-    async delete(id: string) {
-        const node = await this.nodeRepository.findWithChildren(id);
+    async delete(id: string): Promise<NodeDto> {
+        const node = await this.nodeRepository.findById(id);
         if (!node) {
-            throw new NotFoundException(`Директория с id: ${id} не найдена`);
+            throw new NotFoundException(`Узел с id: ${id} не найден`);
+        }
+
+        // Сначала чистим документы (версии + файлы в S3 + записи в поисковом индексе),
+        // пока ноды ещё существуют в БД
+        if (node.type === NodeType.DOCUMENT) {
+            await this.documentVersionService.removeByNodeId(node.id);
+        } else {
+            const descendantDocumentIds = await this.nodeTreeRepository.getDescendantDocumentIds(id);
+            for (const documentId of descendantDocumentIds) {
+                await this.documentVersionService.removeByNodeId(documentId);
+            }
         }
 
         await this.nodeTreeRepository.recursiveDelete(id);
 
-        switch (node.type) {
-            case 'DIRECTORY':
-                {
-                }
-                break;
-            case 'DOCUMENT':
-                {
-                    await this.documentVersionService.removeByNodeId(node.id);
-                }
-                break;
-            default:
-                throw new NotImplementedException(`Удаление для Node типа: ${node.type} сущностей не реализованно`);
-        }
-
-        // const deleteNode = await this.prisma.node.delete({ where: { id } });
-        const deleteNode = await this.nodeRepository.delete(id);
-        return toNodeDto(deleteNode);
+        return toNodeDto(node);
     }
 
     private async isUnique(name: string, type: NodeType, parentId: string | null) {
