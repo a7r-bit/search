@@ -28,7 +28,6 @@ export class SearchService implements IndexWriter, SearchReader {
      */
     async searchDetailed(query: SearchQuery): Promise<SearchResultDto> {
         const raw = await this.searchClient.search(query);
-
         // Микросервис отдаёт богатые хиты (externalId/kind/score/title/highlight),
         // нормализуем под единый формат (совместимо и со строочным контрактом)
         const hits: SearchRawHit[] = (raw.items ?? []).map((item) => (typeof item === 'string' ? { externalId: item } : item));
