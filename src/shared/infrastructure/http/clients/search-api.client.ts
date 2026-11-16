@@ -31,7 +31,9 @@ export class SearchApiClient {
             params: {
                 query: query.query,
                 kind: query.kind,
-                externalIds: query.externalIds,
+                // Контракт микросервиса ожидает CSV-список
+                // externalIds: query.externalIds?.join(','),
+                externalIds: [],
                 matchType: query.matchType,
                 page: query.page,
                 limit: query.limit,
