@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
 import { NodeService } from '../application/node.service';
-import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { ListNodesQueryDto } from './dto/list-nodes.query';
 import { MoveNodeDto } from './dto/move-node.dto';
@@ -40,9 +40,10 @@ export class NodeController {
         description: `Возвращает дочерние элементы директории с правами доступа для текущего пользователя.
 Если пользователь является owner, возвращаются все дочерние элементы.
 Если пользователь не является owner, возвращаются только доступные ему элементы.
-Если у пользователя нет доступа к родительской директории, возвращается пустой список.`,
+Если у пользователя нет READ-доступа к родительской директории, возвращается 403.`,
     })
     @ApiOkResponse({ description: 'Список дочерних элементов дерева', type: TreeItemDto, isArray: true })
+    @ApiForbiddenResponse({ description: 'Нет READ-доступа к родительской директории' })
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
     async findChildren(
         @Query() query: ListNodesQueryDto,

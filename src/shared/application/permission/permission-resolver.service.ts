@@ -11,32 +11,26 @@ export class PermissionResolverService {
     ) {}
 
     /**
-     * Resolwing permissions for current Node
-     * If node doesn't have any permission turn up to parents
+     * Разрешение прав на ноде снизу вверх:
+     * - у ноды есть nodeAccess — они решают: совпавшая группа → её permissions, не совпала → пусто;
+     * - у ноды нет nodeAccess — наследуем от родителя;
+     * - выше корня → READ (открыто для всех)
      */
     async resolveNodePermissions(userGroups: string[], nodeId: string | null): Promise<NodePermissionType[]> {
         if (!nodeId) return [NodePermissionType.READ];
 
-        // Get permissions for current nodeId by user groups
-        const permissions = await this.getNodePermissionsForGroups(nodeId, userGroups);
+        const accesses = await this.prisma.nodeAccess.findMany({
+            where: { nodeId },
+            select: { groupId: true, permissions: true },
+        });
 
-        if (permissions.length > 0) {
-            return [...new Set(permissions)];
+        if (accesses.length > 0) {
+            const matched = accesses.filter((a) => userGroups.includes(a.groupId));
+            if (matched.length === 0) return [];
+            return [...new Set(matched.flatMap((a) => a.permissions))];
         }
 
-        // If no permissions found, check parent node permissions
         const parentNode = await this.nodeTreeRepository.getParent(nodeId);
-        return this.resolveNodePermissions(userGroups, parentNode?.parentId ?? null);
-    }
-
-    private async getNodePermissionsForGroups(nodeId: string, userGroups: string[]): Promise<NodePermissionType[]> {
-        const accesses = await this.prisma.nodeAccess.findMany({
-            where: {
-                nodeId: nodeId,
-                groupId: { in: userGroups },
-            },
-            select: { permissions: true },
-        });
-        return accesses.flatMap((a) => a.permissions);
+        return this.resolveNodePermissions(userGroups, parentNode?.id ?? null);
     }
 }

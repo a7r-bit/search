@@ -1,25 +1,22 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NodeService } from './node.service';
 import { NodeRepository } from '../domain/node.repository';
 import { NodeTreeRepository } from '../domain/node-tree.repository';
 import { DocumentVersionService } from '../../document-version/application/document-version.service';
 import { PermissionResolverService } from '../../../shared/application/permission/permission-resolver.service';
-import { PoliticService } from '../../politic/application/politic.service';
-import { NodeType } from '@prisma/client';
+import { NodePermissionType, NodeType } from '@prisma/client';
 import { RequestUser } from '../../../shared/domain/types/request-user';
 
 describe('NodeService', () => {
     let service: NodeService;
     let nodeRepository: { create: jest.Mock; isUnique: jest.Mock; listChildren: jest.Mock };
     let nodeTreeRepository: { validateParent: jest.Mock };
-    let politicService: { checkUserToNodeAccess: jest.Mock };
     let permissionResolverService: { resolveNodePermissions: jest.Mock };
 
     beforeEach(async () => {
         nodeRepository = { create: jest.fn(), isUnique: jest.fn(), listChildren: jest.fn() };
         nodeTreeRepository = { validateParent: jest.fn() };
-        politicService = { checkUserToNodeAccess: jest.fn() };
         permissionResolverService = { resolveNodePermissions: jest.fn().mockResolvedValue([]) };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -29,7 +26,6 @@ describe('NodeService', () => {
                 { provide: NodeTreeRepository, useValue: nodeTreeRepository },
                 { provide: DocumentVersionService, useValue: {} },
                 { provide: PermissionResolverService, useValue: permissionResolverService },
-                { provide: PoliticService, useValue: politicService },
             ],
         }).compile();
 
@@ -83,33 +79,49 @@ describe('NodeService', () => {
         const ownerUser: RequestUser = { id: 'u1', uidNumber: '1001', activeRole: 'Owner', politicGroups: [], permissions: [] };
         const limitedUser: RequestUser = { id: 'u2', uidNumber: '1002', activeRole: 'User', politicGroups: ['g1'], permissions: [] };
 
-        it('returns empty list without 403 when user has no access to the parent directory', async () => {
-            politicService.checkUserToNodeAccess.mockResolvedValue(false);
+        it('returns all children with resolved permissions for non-owner when parent is readable', async () => {
+            nodeRepository.listChildren.mockResolvedValue([childNode]);
+            permissionResolverService.resolveNodePermissions.mockImplementation(async (_groups: string[], nodeId: string) =>
+                nodeId === 'parent-1' ? ['READ'] : ['READ'],
+            );
 
             const result = await service.listChildren({ parentId: 'parent-1' }, limitedUser, undefined);
 
-            expect(result).toEqual([]);
+            expect(permissionResolverService.resolveNodePermissions).toHaveBeenCalledWith(['g1'], 'child-1');
+            expect(result).toHaveLength(1);
+            expect(result[0].id).toBe('child-1');
+            expect(result[0].permissions).toEqual(['READ']);
+        });
+
+        it('throws ForbiddenException when user has no READ on the parent directory', async () => {
+            permissionResolverService.resolveNodePermissions.mockResolvedValue([]);
+
+            await expect(service.listChildren({ parentId: 'parent-1' }, limitedUser, undefined)).rejects.toThrow(
+                ForbiddenException,
+            );
             expect(nodeRepository.listChildren).not.toHaveBeenCalled();
         });
 
-        it('returns children when user has access to the parent directory', async () => {
-            politicService.checkUserToNodeAccess.mockResolvedValue(true);
+        it('returns roots for non-owner without parent check', async () => {
             nodeRepository.listChildren.mockResolvedValue([childNode]);
+            permissionResolverService.resolveNodePermissions.mockResolvedValue(['READ']);
 
-            const result = await service.listChildren({ parentId: 'parent-1' }, limitedUser, undefined);
+            const result = await service.listChildren({}, limitedUser, undefined);
 
-            expect(politicService.checkUserToNodeAccess).toHaveBeenCalledWith(['g1'], 'parent-1');
+            // без parentId проверка родителя не делается — только права детей
+            expect(permissionResolverService.resolveNodePermissions).toHaveBeenCalledTimes(1);
+            expect(permissionResolverService.resolveNodePermissions).toHaveBeenCalledWith(['g1'], 'child-1');
             expect(result).toHaveLength(1);
-            expect(result[0].id).toBe('child-1');
         });
 
-        it('returns children for owner without access check', async () => {
+        it('returns all permissions for owner without resolver call', async () => {
             nodeRepository.listChildren.mockResolvedValue([childNode]);
 
             const result = await service.listChildren({ parentId: 'parent-1' }, ownerUser, undefined);
 
-            expect(politicService.checkUserToNodeAccess).not.toHaveBeenCalled();
+            expect(permissionResolverService.resolveNodePermissions).not.toHaveBeenCalled();
             expect(result).toHaveLength(1);
+            expect(result[0].permissions).toEqual(Object.values(NodePermissionType));
         });
     });
 });
