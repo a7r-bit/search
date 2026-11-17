@@ -44,10 +44,7 @@ export class NodeService {
         // Явный запрос детей директории, на которую нет READ — 403;
         // в самом списке все дети возвращаются с пер-нода permissions (фронт не раскрывает ноды без READ)
         if (!isOwner && query.parentId) {
-            const parentPermissions = await this.permissionResolverService.resolveNodePermissions(
-                userReq.politicGroups,
-                query.parentId,
-            );
+            const parentPermissions = await this.permissionResolverService.resolveNodePermissions(userReq.politicGroups, query.parentId);
             if (!parentPermissions.includes(NodePermissionType.READ)) {
                 throw new ForbiddenException('Доступ отсутствует');
             }

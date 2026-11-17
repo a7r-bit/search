@@ -57,9 +57,7 @@ describe('NodeService', () => {
             nodeTreeRepository.validateParent.mockResolvedValue({ isValid: true });
             nodeRepository.isUnique.mockResolvedValue(false);
 
-            await expect(service.create({ type: NodeType.DIRECTORY, name: 'Корень1' })).rejects.toThrow(
-                BadRequestException,
-            );
+            await expect(service.create({ type: NodeType.DIRECTORY, name: 'Корень1' })).rejects.toThrow(BadRequestException);
             expect(nodeRepository.create).not.toHaveBeenCalled();
         });
     });
@@ -81,7 +79,7 @@ describe('NodeService', () => {
 
         it('returns all children with resolved permissions for non-owner when parent is readable', async () => {
             nodeRepository.listChildren.mockResolvedValue([childNode]);
-            permissionResolverService.resolveNodePermissions.mockImplementation(async (_groups: string[], nodeId: string) =>
+            permissionResolverService.resolveNodePermissions.mockImplementation((_groups: string[], nodeId: string) =>
                 nodeId === 'parent-1' ? ['READ'] : ['READ'],
             );
 
@@ -96,9 +94,7 @@ describe('NodeService', () => {
         it('throws ForbiddenException when user has no READ on the parent directory', async () => {
             permissionResolverService.resolveNodePermissions.mockResolvedValue([]);
 
-            await expect(service.listChildren({ parentId: 'parent-1' }, limitedUser, undefined)).rejects.toThrow(
-                ForbiddenException,
-            );
+            await expect(service.listChildren({ parentId: 'parent-1' }, limitedUser, undefined)).rejects.toThrow(ForbiddenException);
             expect(nodeRepository.listChildren).not.toHaveBeenCalled();
         });
 

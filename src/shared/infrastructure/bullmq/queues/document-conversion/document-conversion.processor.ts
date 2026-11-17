@@ -14,11 +14,11 @@ import { Kind } from '../../../../../modules/search/presentation/dto/search.type
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
     constructor(
-        @Inject(LoggerKey) private logger: Logger,
         private readonly prisma: PrismaService,
         private readonly gotenbergService: GotenbergService,
         private readonly pdfService: PdfService,
         private readonly s3Service: S3Service,
+        @Inject(LoggerKey) private logger: Logger,
         @Inject(INDEX_WRITER) private readonly indexWriter: IndexWriter,
     ) {
         super();
@@ -94,12 +94,12 @@ export class DocumentConversionProcessor extends WorkerHost {
     }
 
     @OnWorkerEvent('completed')
-    onCompleted(job: Job) {
+    onCompleted(job: Job<DocumentConversionJobDto>) {
         this.logger.log(`✔ Job ${job.data.documentVersionId} выполнена`);
     }
 
     @OnWorkerEvent('failed')
-    async onFailed(job: Job, err: Error) {
+    async onFailed(job: Job<DocumentConversionJobDto>, err: Error) {
         this.logger.error(`🧨 Job ${job.data.documentVersionId} завершилась ошибкой`, err.stack || err.message);
 
         await this.prisma.documentVersion.update({

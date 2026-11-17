@@ -27,7 +27,7 @@ describe('PermissionResolverService', () => {
     it('returns READ when neither the node nor its parent has policies (open node)', async () => {
         // child-1 без политик → parent root без политик → выше корня → [READ]
         nodeAccessFindMany.mockResolvedValue([]);
-        getParent.mockImplementation(async (id: string) => (id === 'child-1' ? { id: 'root', parentId: null } : null));
+        getParent.mockImplementation((id: string) => (id === 'child-1' ? { id: 'root', parentId: null } : null));
 
         const result = await service.resolveNodePermissions(['g1'], 'child-1');
 
@@ -47,9 +47,7 @@ describe('PermissionResolverService', () => {
     });
 
     it('returns permissions of the matching policy', async () => {
-        nodeAccessFindMany.mockResolvedValue([
-            { nodeId: 'child-2', groupId: 'g1', permissions: [NodePermissionType.READ] },
-        ]);
+        nodeAccessFindMany.mockResolvedValue([{ nodeId: 'child-2', groupId: 'g1', permissions: [NodePermissionType.READ] }]);
 
         const result = await service.resolveNodePermissions(['g1'], 'child-2');
 
@@ -58,12 +56,10 @@ describe('PermissionResolverService', () => {
 
     it('inherits restriction from parent when the node itself has no policies', async () => {
         // child без политик, parent-1 с чужими политиками → []
-        nodeAccessFindMany.mockImplementation(async ({ where }: { where: { nodeId: string } }) =>
-            where.nodeId === 'child'
-                ? []
-                : [{ nodeId: 'parent-1', groupId: 'g-other', permissions: [NodePermissionType.READ] }],
+        nodeAccessFindMany.mockImplementation(({ where }: { where: { nodeId: string } }) =>
+            where.nodeId === 'child' ? [] : [{ nodeId: 'parent-1', groupId: 'g-other', permissions: [NodePermissionType.READ] }],
         );
-        getParent.mockImplementation(async (id: string) => (id === 'child' ? { id: 'parent-1', parentId: null } : null));
+        getParent.mockImplementation((id: string) => (id === 'child' ? { id: 'parent-1', parentId: null } : null));
 
         const result = await service.resolveNodePermissions(['g1'], 'child');
 

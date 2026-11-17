@@ -9,7 +9,7 @@ export class RoleGuard implements CanActivate {
     private readonly logger = new Logger(RoleGuard.name);
     constructor(private reflector: Reflector) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
+    canActivate(context: ExecutionContext): boolean {
         this.logger.debug('RoleGuard guard');
         const request = context.switchToHttp().getRequest<{ user?: RequestUser }>();
         const requiredRole = this.reflector.getAllAndOverride<string>(ROLE_KEY, [context.getHandler(), context.getClass()]);
@@ -21,7 +21,7 @@ export class RoleGuard implements CanActivate {
             return false;
         }
 
-        if (userRole === AppRole.OWNER) return true;
+        if (userRole === (AppRole.OWNER as string)) return true;
 
         const normalizedRequiredRole = requiredRole.trim().toLowerCase();
         const normalizedUserRole = userRole.trim().toLowerCase();

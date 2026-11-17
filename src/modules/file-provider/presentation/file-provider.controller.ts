@@ -1,12 +1,7 @@
 import { GrpcMethod } from '@nestjs/microservices';
 import { FileProviderService } from '../application/file-provider.service';
 import { Controller } from '@nestjs/common';
-import {
-    GetAccessToFileRequest,
-    GetAccessToFileResponse,
-    GetFileUrlRequest,
-    GetFileUrlResponse,
-} from './file-provider.dto';
+import { GetAccessToFileRequest, GetAccessToFileResponse, GetFileUrlRequest, GetFileUrlResponse } from './file-provider.dto';
 
 @Controller('file-provider')
 export class FileProviderController {

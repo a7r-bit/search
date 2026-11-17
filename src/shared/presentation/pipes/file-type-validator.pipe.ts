@@ -6,7 +6,7 @@ export class CustomFileTypeValidator extends FileValidator<Record<string, any>, 
         super({});
     }
 
-    async isValid(file?: IFile): Promise<boolean> {
+    isValid(file?: IFile): boolean {
         if (!file || !file.mimetype) return false;
         return this.allowedTypes.test(file.mimetype);
     }

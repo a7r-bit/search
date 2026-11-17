@@ -15,14 +15,14 @@ export class ScopeGuard implements CanActivate {
     private readonly logger = new Logger(ScopeGuard.name);
     constructor(private reflector: Reflector) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
+    canActivate(context: ExecutionContext): boolean {
         const request = context.switchToHttp().getRequest<{ user?: RequestUser }>();
 
         const requiredScope = this.reflector.get<string>(SCOPE_KEY, context.getHandler());
         if (!requiredScope) return true;
         const permissions = request.user?.permissions ?? [];
 
-        if (request.user?.activeRole === AppRole.OWNER) {
+        if (request.user?.activeRole === (AppRole.OWNER as string)) {
             return true;
         }
 

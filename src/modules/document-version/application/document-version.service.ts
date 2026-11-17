@@ -165,9 +165,6 @@ export class DocumentVersionService {
         const ext = path.extname(normalizedFileName).toLocaleLowerCase();
 
         const isPDF = ext == '.pdf';
-        // const savedDir = isPDF ? './uploads/converted' : './uploads/original';
-
-        // const savedFilePath = await this.fileStorageService.saveFileToDisk(file, savedDir);
         const { key } = await this.s3Service.uploadFile(file, 'original');
         const documentVersion = await this.prisma.$transaction(async (tx) => {
             const lastVersion = await this.getLastVersion(nodeId, tx);

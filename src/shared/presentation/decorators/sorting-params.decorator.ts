@@ -10,7 +10,7 @@ export type SortingParam = {
     direction: string;
 };
 
-export const SortingParams = createParamDecorator((validParams, ctx: ExecutionContext): SortingParam | null => {
+export const SortingParams = createParamDecorator((validParams: string[], ctx: ExecutionContext): SortingParam | null => {
     const req: Request = ctx.switchToHttp().getRequest();
     const sort = req.query.sort as string;
 
@@ -23,7 +23,7 @@ export const SortingParams = createParamDecorator((validParams, ctx: ExecutionCo
 
     const [property, direction] = sort.split(':');
     if (!validParams.includes(property))
-        throw new NotAcceptableException(`Невалидный параметр сортировки: ${property}, разрешенне: [${validParams}]`);
+        throw new NotAcceptableException(`Невалидный параметр сортировки: ${property}, разрешенне: [${validParams.join(', ')}]`);
 
     return { property, direction };
 });

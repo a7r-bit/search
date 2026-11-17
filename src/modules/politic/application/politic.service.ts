@@ -177,7 +177,7 @@ export class PoliticService {
         const groupsByNode = new Map<string, Set<string>>();
         for (const a of accesses) {
             if (!groupsByNode.has(a.nodeId)) groupsByNode.set(a.nodeId, new Set());
-            groupsByNode.get(a.nodeId)!.add(a.groupId);
+            groupsByNode.get(a.nodeId).add(a.groupId);
         }
 
         const userPolicySet = new Set(userPolicies);

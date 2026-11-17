@@ -18,7 +18,7 @@ export class NodeAdminGuard implements CanActivate {
 
         const request = context.switchToHttp().getRequest<Request & { user?: RequestUser }>();
 
-        if (request.user?.activeRole === AppRole.OWNER) return true;
+        if (request.user?.activeRole === (AppRole.OWNER as string)) return true;
 
         const nodeId = (request.params.nodeId ?? request.query.nodeId) as string;
         const permissions = await this.permissionResolverService.resolveNodePermissions(request.user?.politicGroups ?? [], nodeId);

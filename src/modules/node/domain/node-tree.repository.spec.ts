@@ -16,10 +16,7 @@ describe('NodeTreeRepository', () => {
         };
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                NodeTreeRepository,
-                { provide: PrismaService, useValue: prisma },
-            ],
+            providers: [NodeTreeRepository, { provide: PrismaService, useValue: prisma }],
         }).compile();
 
         repository = module.get<NodeTreeRepository>(NodeTreeRepository);

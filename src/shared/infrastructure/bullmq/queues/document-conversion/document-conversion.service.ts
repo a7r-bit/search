@@ -5,7 +5,7 @@ import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
 
 @Injectable()
 export class DocumentConversionService {
-    constructor(@InjectQueue('documentConversion') private documentConversionQueue: Queue) {}
+    constructor(@InjectQueue('documentConversion') private documentConversionQueue: Queue<DocumentConversionJobDto>) {}
     async addConversionJob(data: DocumentConversionJobDto) {
         await this.documentConversionQueue.add('documentConversion', data, {
             jobId: data.documentVersionId,

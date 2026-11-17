@@ -8,13 +8,7 @@ import { NodeInfrastructureModule } from './node-infrastructure.module';
 import { AccessControlModule } from '../../shared/application/permission/permission.module';
 
 @Module({
-    imports: [
-        DocumentVersionModule, 
-        PoliticModule, 
-        BullmqModule, 
-        NodeInfrastructureModule, 
-        AccessControlModule
-    ],
+    imports: [DocumentVersionModule, PoliticModule, BullmqModule, NodeInfrastructureModule, AccessControlModule],
     controllers: [NodeController],
     providers: [NodeService],
     exports: [NodeService],
