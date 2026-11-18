@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import { Role } from '@prisma/client';
+import { RoleResolver } from '../../../shared/domain/interfaces/role-resolver.interface';
 
 @Injectable()
-export class RoleService {
+export class RoleService implements RoleResolver {
     constructor(private readonly prisma: PrismaService) {}
 
     async getRoles() {
@@ -30,7 +31,7 @@ export class RoleService {
         return role;
     }
 
-    async gerRoleByUserId(userId: string): Promise<Role[]> {
+    async getRoleByUserId(userId: string): Promise<Role[]> {
         const roles = await this.prisma.role.findMany({ where: { users: { some: { id: userId } } } });
         return roles;
     }

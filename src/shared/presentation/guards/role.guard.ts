@@ -1,13 +1,16 @@
-import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLE_KEY } from '../decorators/role.decorator';
 import { RequestUser } from '../../domain/types/request-user';
 import { AppRole } from '../../domain/constants';
+import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
-    private readonly logger = new Logger(RoleGuard.name);
-    constructor(private reflector: Reflector) {}
+    constructor(
+        private reflector: Reflector,
+        @Inject(LoggerKey) private readonly logger: Logger,
+    ) {}
 
     canActivate(context: ExecutionContext): boolean {
         this.logger.debug('RoleGuard guard');

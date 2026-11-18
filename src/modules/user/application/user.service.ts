@@ -3,9 +3,10 @@ import { CreateUserDto } from '../presentation/dto/create-user.dto';
 import { UpdateUserDto } from '../presentation/dto/update-user.dto';
 import { User } from '@prisma/client';
 import { UserRepository } from '../domain/user.repository';
+import { UserProvider } from '../../../shared/domain/interfaces/user-provider.interface';
 
 @Injectable()
-export class UserService {
+export class UserService implements UserProvider {
     constructor(private readonly userRepository: UserRepository) {}
 
     async findAll(): Promise<User[]> {

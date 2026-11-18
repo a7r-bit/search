@@ -1,14 +1,14 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { TokenService } from '../../../modules/token/application/token.service';
-import { RoleService } from '../../../modules/role/application/role.service';
-import { UserService } from '../../../modules/user/application/user.service';
 import { PayloadDTO } from '../../../modules/token/presentation/dto/payload.dto';
 import { RequestUser } from '../../domain/types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import ContextStorageService, { ContextStorageServiceKey } from '../../infrastructure/context/domain/interfaces/contextStorageService';
 import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import { TOKEN_VERIFIER, TokenVerifier } from '../../domain/interfaces/token-verifier.interface';
+import { ROLE_RESOLVER, RoleResolver } from '../../domain/interfaces/role-resolver.interface';
+import { USER_PROVIDER, UserProvider } from '../../domain/interfaces/user-provider.interface';
 
 /*
  *   Проверка токена при обращении к серверу и установка роли,
@@ -29,11 +29,11 @@ import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
 export class AccessGuard implements CanActivate {
     constructor(
         @Inject(LoggerKey) private readonly logger: Logger,
-        private readonly reflector: Reflector,
-        private readonly tokenService: TokenService,
-        private readonly roleService: RoleService,
-        private readonly userService: UserService,
+        @Inject(TOKEN_VERIFIER) private readonly tokenService: TokenVerifier,
+        @Inject(ROLE_RESOLVER) private readonly roleService: RoleResolver,
+        @Inject(USER_PROVIDER) private readonly userService: UserProvider,
         @Inject(ContextStorageServiceKey) private readonly contextStorageService: ContextStorageService,
+        private readonly reflector: Reflector,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,7 +53,7 @@ export class AccessGuard implements CanActivate {
             }
 
             try {
-                const payload: PayloadDTO = await this.tokenService.verifyAccessToken(token);
+                const payload = await this.tokenService.verifyAccessToken(token);
 
                 const userId = payload.id;
                 const politicGroups = payload.politicGroups;
@@ -75,7 +75,7 @@ export class AccessGuard implements CanActivate {
                     activeRole: requestUser.activeRole,
                 });
 
-                const userRoles = await this.roleService.gerRoleByUserId(userId);
+                const userRoles = await this.roleService.getRoleByUserId(userId);
 
                 if (!userRoles.some((r) => r.id == activeRole.id)) {
                     throw new UnauthorizedException('Невалидные данные токена');

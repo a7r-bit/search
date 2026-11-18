@@ -23,6 +23,12 @@ import { LoggerModule } from './shared/infrastructure/logger/infrastructure/wins
 import { ContextModule } from './shared/infrastructure/context/infrastructure/nestjs/contextModule';
 import { HttpInfrastructureModule } from './shared/infrastructure/http/http.module';
 import { UserProvisioningModule } from './modules/user-provisioning/user-provisioning.module';
+import { TokenService } from './modules/token/application/token.service';
+import { RoleService } from './modules/role/application/role.service';
+import { UserService } from './modules/user/application/user.service';
+import { ROLE_RESOLVER } from './shared/domain/interfaces/role-resolver.interface';
+import { TOKEN_VERIFIER } from './shared/domain/interfaces/token-verifier.interface';
+import { USER_PROVIDER } from './shared/domain/interfaces/user-provider.interface';
 
 @Module({
     imports: [
@@ -47,6 +53,13 @@ import { UserProvisioningModule } from './modules/user-provisioning/user-provisi
         ...(process.env.ENABLE_ADMIN === 'true' ? [adminJsImport] : []),
     ],
     controllers: [AppController],
-    providers: [AppService, { provide: APP_GUARD, useClass: AccessGuard }, { provide: APP_GUARD, useClass: ScopeGuard }],
+    providers: [
+        AppService,
+        { provide: TOKEN_VERIFIER, useExisting: TokenService },
+        { provide: ROLE_RESOLVER, useExisting: RoleService },
+        { provide: USER_PROVIDER, useExisting: UserService },
+        { provide: APP_GUARD, useClass: AccessGuard },
+        { provide: APP_GUARD, useClass: ScopeGuard },
+    ],
 })
 export class AppModule {}

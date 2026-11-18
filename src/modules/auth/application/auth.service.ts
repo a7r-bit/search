@@ -69,7 +69,7 @@ export class AuthService {
         const user = await this.userService.findOne(reqUser.id);
 
         const requiredRole = await this.roleService.getRoleByName(roleName);
-        const userRoles = await this.roleService.gerRoleByUserId(reqUser.id);
+        const userRoles = await this.roleService.getRoleByUserId(reqUser.id);
 
         if (!userRoles.some((role) => role.id == requiredRole.id)) {
             throw new ForbiddenException(`У пользователя нет доступа к роли ${roleName}`);
@@ -103,7 +103,7 @@ export class AuthService {
     async getMe(req: any) {
         const reqUser: RequestUser = req.user;
         const user = await this.userService.findOne(reqUser.id);
-        const userRoles = await this.roleService.gerRoleByUserId(reqUser.id);
+        const userRoles = await this.roleService.getRoleByUserId(reqUser.id);
 
         return {
             id: user.id,

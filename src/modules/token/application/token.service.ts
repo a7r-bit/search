@@ -3,9 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { PayloadDTO } from '../presentation/dto/payload.dto';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { TokenVerifier } from '../../../shared/domain/interfaces/token-verifier.interface';
 
 @Injectable()
-export class TokenService {
+export class TokenService implements TokenVerifier {
     private readonly accessSecret: string;
     private readonly refreshSecret: string;
     private readonly accessExpires: string;
