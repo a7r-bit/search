@@ -1,27 +1,25 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import { CreateGroupDTO } from '../presentation/dto/create-group.dto';
 import { isUUID } from 'class-validator';
-import { Group, Prisma } from '@prisma/client';
 import { toGroupDTO } from '../presentation/dto/group-mapper';
 import { ListGroupQueryDto } from '../presentation/dto/list-group-query.dto';
 import { PaginatedGroupResponseDto } from '../presentation/dto/paginated-group-response.dto';
 import { GroupWithAccessesDTO } from '../presentation/dto/group-with-accesses.dto';
 import { UpdateGroupsAccessesDTO } from '../presentation/dto/update-group-access.dto';
 import { NodeTreeRepository } from '../../node/domain/node-tree.repository';
+import { NodeRepository } from '../../node/domain/node.repository';
+import { GroupRepository } from '../domain/group.repository';
 
 @Injectable()
 export class PoliticService {
     constructor(
-        private readonly prisma: PrismaService,
         private readonly nodeTreeRepository: NodeTreeRepository,
+        private readonly nodeRepository: NodeRepository,
+        private readonly groupRepository: GroupRepository,
     ) {}
 
     async updateGroupsAccesses(nodeId: string, body: UpdateGroupsAccessesDTO): Promise<GroupWithAccessesDTO[]> {
-        const node = await this.prisma.node.findUnique({ where: { id: nodeId } });
-        if (!node) {
-            throw new NotFoundException('Директория не найдена');
-        }
+        await this.nodeRepository.findByIdOrThrow(nodeId);
 
         const groupIds = body.groups.map((group) => group.groupId);
         const uniqueGroupIds = new Set(groupIds);
@@ -29,30 +27,15 @@ export class PoliticService {
             throw new BadRequestException('Список групп содержит дубликаты.');
         }
 
-        const existingGroups = await this.prisma.group.findMany({
-            where: { id: { in: groupIds } },
-            select: { id: true },
-        });
+        const existingGroups = await this.groupRepository.findIdsByIds(groupIds);
         if (existingGroups.length !== groupIds.length) {
             throw new NotFoundException('Групповая политика не найдена');
         }
 
-        await this.prisma.$transaction(async (tx) => {
-            for (const group of body.groups) {
-                if (group.accesses.length === 0) {
-                    await tx.nodeAccess.deleteMany({
-                        where: { groupId: group.groupId, nodeId },
-                    });
-                    continue;
-                }
-
-                await tx.nodeAccess.upsert({
-                    where: { groupId_nodeId: { groupId: group.groupId, nodeId } },
-                    create: { groupId: group.groupId, nodeId, permissions: group.accesses },
-                    update: { permissions: group.accesses },
-                });
-            }
-        });
+        await this.groupRepository.setNodeAccesses(
+            nodeId,
+            body.groups.map((group) => ({ groupId: group.groupId, permissions: group.accesses })),
+        );
 
         return this.getGroupsForNode(nodeId);
     }
@@ -63,16 +46,9 @@ export class PoliticService {
         const limit = Number(query.limit) ?? 20;
         const skip = (page - 1) * limit;
 
-        const where: Prisma.GroupWhereInput = query.search?.trim() ? { name: { contains: query.search.trim(), mode: 'insensitive' } } : {};
-
-        const [groups, total] = await this.prisma.$transaction([
-            this.prisma.group.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { name: 'asc' },
-            }),
-            this.prisma.group.count({ where }),
+        const [groups, total] = await Promise.all([
+            this.groupRepository.searchByName(query.search, skip, limit),
+            this.groupRepository.countByName(query.search),
         ]);
         return {
             items: groups.map(toGroupDTO),
@@ -87,25 +63,9 @@ export class PoliticService {
             throw new BadRequestException('ID не валиден.');
         }
 
-        const node = await this.prisma.node.findUnique({ where: { id: nodeId } });
-        if (!node) {
-            throw new NotFoundException('Директория не найдена');
-        }
+        await this.nodeRepository.findByIdOrThrow(nodeId);
 
-        const groups = await this.prisma.group.findMany({
-            where: {
-                access: {
-                    some: { nodeId },
-                },
-            },
-            include: {
-                access: {
-                    where: { nodeId },
-                    select: { permissions: true },
-                },
-            },
-            orderBy: { name: 'asc' },
-        });
+        const groups = await this.groupRepository.findWithAccessForNode(nodeId);
 
         return groups.map((group) => ({
             id: group.id,
@@ -115,15 +75,7 @@ export class PoliticService {
     }
 
     async getPoliticsByTabNumber(tabNumber: string) {
-        const groups = await this.prisma.group.findMany({
-            where: {
-                users: {
-                    some: {
-                        uidNumber: tabNumber,
-                    },
-                },
-            },
-        });
+        const groups = await this.groupRepository.findByTabNumber(tabNumber);
         return groups.map((group) => toGroupDTO(group));
     }
 
@@ -131,35 +83,22 @@ export class PoliticService {
         if (!isUUID(nodeId)) {
             throw new BadRequestException('ID не валиден.');
         }
-        const node = await this.prisma.node.findUnique({ where: { id: nodeId } });
 
-        if (!node) {
-            throw new NotFoundException(`Директория не найдена`);
-        }
-        const groups = await this.prisma.group.findMany({
-            where: {
-                access: {
-                    some: {
-                        nodeId,
-                    },
-                },
-            },
-        });
+        await this.nodeRepository.findByIdOrThrow(nodeId);
+
+        const groups = await this.groupRepository.findForNode(nodeId);
+
         return groups.map((group) => toGroupDTO(group));
     }
+
     async addUsersToGroup(usersIds: string[], groupId: string) {
         await this.getGroupById(groupId);
-        return await this.prisma.group.update({
-            where: { id: groupId },
-            data: { users: { connect: usersIds.map((id) => ({ id })) } },
-        });
+        return await this.groupRepository.addUsers(groupId, usersIds);
     }
+
     async deleteUsersFromGroup(usersIds: string[], groupId: string) {
         await this.getGroupById(groupId);
-        return await this.prisma.group.update({
-            where: { id: groupId },
-            data: { users: { disconnect: usersIds.map((id) => ({ id })) } },
-        });
+        return await this.groupRepository.removeUsers(groupId, usersIds);
     }
 
     async checkUserToNodeAccess(userPolicies: string[], nodeId: string | null): Promise<boolean> {
@@ -169,10 +108,7 @@ export class PoliticService {
 
         if (chain.length === 0) return false;
 
-        const accesses = await this.prisma.nodeAccess.findMany({
-            where: { nodeId: { in: chain } },
-            select: { nodeId: true, groupId: true },
-        });
+        const accesses = await this.groupRepository.findAccessesForNodes(chain);
 
         const groupsByNode = new Map<string, Set<string>>();
         for (const a of accesses) {
@@ -195,33 +131,15 @@ export class PoliticService {
         if (!isUnique) {
             throw new BadRequestException(`Групповая политика с названием ${createDTO.name} уже существует`);
         }
-        return await this.prisma.group.create({
-            data: {
-                name: createDTO.name,
-            },
-        });
+        return await this.groupRepository.create({ name: createDTO.name });
     }
 
     async deleteGroup(groupId: string) {
-        return await this.prisma.group.delete({ where: { id: groupId } });
+        return await this.groupRepository.delete(groupId);
     }
 
-    // async hasAdminOnNode(userGroups: string[], nodeId: string): Promise<boolean> {
-    //     if (!isUUID(nodeId)) return false;
-    //     return await this.hasNodePermission(userGroups, nodeId, NodePermissionType.ADMIN);
-    // }
-
-    // private async hasNodePermission(userGroups: string[], nodeId: string, permission: NodePermissionType): Promise<boolean> {
-    //     const permissions = await this.resolveNodePermissions(userGroups, nodeId);
-    //     return permissions.includes(permission);
-    // }
-
     private async isUnique(name: string) {
-        const group = await this.prisma.group.findFirst({
-            where: {
-                name: name,
-            },
-        });
+        const group = await this.groupRepository.findByName(name);
         return group ? false : true;
     }
 
@@ -230,9 +148,7 @@ export class PoliticService {
             throw new BadRequestException('ID не валиден.');
         }
 
-        const group: Group = await this.prisma.group.findUnique({
-            where: { id: groupId },
-        });
+        const group = await this.groupRepository.findById(groupId);
         if (!group) {
             throw new NotFoundException(`Групповая политика не найдена`);
         }
