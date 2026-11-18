@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NodeService } from './node.service';
+import { NodeTreeService } from './node-tree.service';
 import { NodeRepository } from '../domain/node.repository';
 import { NodeTreeRepository } from '../domain/node-tree.repository';
 import { DocumentVersionService } from '../../document-version/application/document-version.service';
@@ -11,12 +12,14 @@ import { RequestUser } from '../../../shared/domain/types/request-user';
 describe('NodeService', () => {
     let service: NodeService;
     let nodeRepository: { create: jest.Mock; isUnique: jest.Mock; listChildren: jest.Mock };
-    let nodeTreeRepository: { validateParent: jest.Mock };
+    let nodeTreeRepository: Record<string, never>;
+    let nodeTreeService: { validateParent: jest.Mock };
     let permissionResolverService: { resolveNodePermissions: jest.Mock };
 
     beforeEach(async () => {
         nodeRepository = { create: jest.fn(), isUnique: jest.fn(), listChildren: jest.fn() };
-        nodeTreeRepository = { validateParent: jest.fn() };
+        nodeTreeRepository = {};
+        nodeTreeService = { validateParent: jest.fn() };
         permissionResolverService = { resolveNodePermissions: jest.fn().mockResolvedValue([]) };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -24,6 +27,7 @@ describe('NodeService', () => {
                 NodeService,
                 { provide: NodeRepository, useValue: nodeRepository },
                 { provide: NodeTreeRepository, useValue: nodeTreeRepository },
+                { provide: NodeTreeService, useValue: nodeTreeService },
                 { provide: DocumentVersionService, useValue: {} },
                 { provide: PermissionResolverService, useValue: permissionResolverService },
             ],
@@ -34,7 +38,7 @@ describe('NodeService', () => {
 
     describe('create', () => {
         it('creates node when name is free', async () => {
-            nodeTreeRepository.validateParent.mockResolvedValue({ isValid: true });
+            nodeTreeService.validateParent.mockResolvedValue({ isValid: true });
             nodeRepository.isUnique.mockResolvedValue(true);
             const created = {
                 id: 'n1',
@@ -54,7 +58,7 @@ describe('NodeService', () => {
         });
 
         it('throws BadRequestException when name is taken in the same parent', async () => {
-            nodeTreeRepository.validateParent.mockResolvedValue({ isValid: true });
+            nodeTreeService.validateParent.mockResolvedValue({ isValid: true });
             nodeRepository.isUnique.mockResolvedValue(false);
 
             await expect(service.create({ type: NodeType.DIRECTORY, name: 'Корень1' })).rejects.toThrow(BadRequestException);
