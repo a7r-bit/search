@@ -5,6 +5,7 @@
 > **Цели:** Улучшение соответствия требованиям LDAP, полное удаление поискового движка Elasticsearch (реализован как отдельный микросервис), улучшение общей архитектуры и соответствия SOLID
 
 > **Структура кода (важно):** с 2026-11-09 `src/` перестроен в **feature-first DDD** (см. `RESTRUCTURE_PLAN.md`):
+>
 > - `modules/<фича>/` — bounded contexts со слоями `presentation/` (controller, dto, mappers), `application/` (service), `domain/` (repository, types, interfaces, config).
 > - `shared/` — ядро: `domain/` (types, constants), `application/` (permission), `infrastructure/` (prisma, s3, logger, context, http/clients, bullmq), `presentation/` (guards, decorators, pipes).
 > - `src/common/` и `src/infrastructure/` **упразднены** (слиты в `shared/`).
@@ -35,14 +36,14 @@
 
 ## 📊 Обзор изменений
 
-| Фаза      | Описание                                   | Оценка (дни) | Статус                                      |
-| --------- | ------------------------------------------ | ------------ | ------------------------------------------- |
+| Фаза      | Описание                                   | Оценка (дни) | Статус                                       |
+| --------- | ------------------------------------------ | ------------ | -------------------------------------------- |
 | Фаза 0    | Подготовка и исправление критических багов | 1–2          | ✅ (FileProvider-баг исправлен, тесты 30/30) |
-| Фаза 1    | Удаление Elasticsearch                     | 3–4          | ✅                                          |
-| Фаза 2    | Улучшение LDAP интеграции                  | 4–5          | 🔄                                          |
-| Фаза 3    | Улучшение общей архитектуры (SOLID)        | 4–5          | 🔄                                          |
-| Фаза 4    | Тестирование и документация                | 2–3          | ⬜                                          |
-| **Итого** |                                            | **14–19**    |                                             |
+| Фаза 1    | Удаление Elasticsearch                     | 3–4          | ✅                                           |
+| Фаза 2    | Улучшение LDAP интеграции                  | 4–5          | 🔄                                           |
+| Фаза 3    | Улучшение общей архитектуры (SOLID)        | 4–5          | 🔄                                           |
+| Фаза 4    | Тестирование и документация                | 2–3          | ⬜                                           |
+| **Итого** |                                            | **14–19**    |                                              |
 
 ---
 
@@ -209,10 +210,10 @@ export interface LdapConfig {
 
 `shared/presentation/guards/*` сейчас импортируют конкретные сервисы из `modules/*` (TokenService, RoleService, UserService, PoliticService) — общий слой зависит от фичевого.
 
-- [ ] Описать интерфейсы в `shared/domain/` (или `shared/application/`): `TokenVerifier`, `RoleResolver`, `UserProvider`, `NodeAccessChecker`
-- [ ] Реализации оставить в модулях (`modules/*/application/*.service.ts`), пробрасывать через токены DI (`useExisting`/`useFactory`)
-- [ ] `AccessGuard` (`shared/presentation/guards/access.guard.ts`) и `CheckGroupPolitic`/`NodeAdminGuard` конструктором зависеть только от интерфейсов
-- [ ] Унифицировать источник nodeId в guards: `CheckGroupPolitic` читает только `query.parentId`, `NodeAdminGuard` — `params.nodeId ?? query.nodeId`
+- [x] Описать интерфейсы в `shared/domain/` (или `shared/application/`): `TokenVerifier`, `RoleResolver`, `UserProvider`, `NodeAccessChecker`
+- [x] Реализации оставить в модулях (`modules/*/application/*.service.ts`), пробрасывать через токены DI (`useExisting`/`useFactory`)
+- [x] `AccessGuard` (`shared/presentation/guards/access.guard.ts`) и `NodeAdminGuard` конструктором зависеть только от интерфейсов
+- [x] Унифицировать источник nodeId в guards: `CheckGroupPolitic` читает только `query.parentId`, `NodeAdminGuard` — `params.nodeId ?? query.nodeId`
 
 ### 3.3 Разделить «боги»-сервисы (принцип S — Single Responsibility)
 
@@ -294,26 +295,26 @@ export interface LdapConfig {
 
 ## 📎 Соответствие старой → новой структуры (справочно)
 
-| Было | Стало |
-| --- | --- |
-| `src/common/guards/*` | `src/shared/presentation/guards/*` |
-| `src/common/decorators/*` | `src/shared/presentation/decorators/*` |
-| `src/common/pipes/*` | `src/shared/presentation/pipes/*` |
-| `src/common/types/*` | `src/shared/domain/types/*` |
-| `src/common/constants.ts` | `src/shared/domain/constants.ts` |
-| `src/common/dto/search/*` | `src/modules/search/presentation/dto/*` |
-| `src/common/interfaces/search/*` | `src/modules/search/domain/*` |
-| `src/infrastructure/s3/*` | `src/shared/infrastructure/s3/*` |
-| `src/infrastructure/logger/*` | `src/shared/infrastructure/logger/*` |
-| `src/infrastructure/context/*` | `src/shared/infrastructure/context/*` |
-| `src/infrastructure/http/clients/*` | `src/shared/infrastructure/http/clients/*` |
-| `src/infrastructure/employees-parser/*` | `src/modules/employees-parser/*` |
-| `src/modules/prisma/*` | `src/shared/infrastructure/prisma/*` |
-| `src/modules/access-control/*` | `src/shared/application/permission/*` |
-| `src/modules/bullmq/*` | `src/shared/infrastructure/bullmq/*` |
-| `src/user-provisioning/*` | `src/modules/user-provisioning/*` |
+| Было                                      | Стало                                                  |
+| ----------------------------------------- | ------------------------------------------------------ |
+| `src/common/guards/*`                     | `src/shared/presentation/guards/*`                     |
+| `src/common/decorators/*`                 | `src/shared/presentation/decorators/*`                 |
+| `src/common/pipes/*`                      | `src/shared/presentation/pipes/*`                      |
+| `src/common/types/*`                      | `src/shared/domain/types/*`                            |
+| `src/common/constants.ts`                 | `src/shared/domain/constants.ts`                       |
+| `src/common/dto/search/*`                 | `src/modules/search/presentation/dto/*`                |
+| `src/common/interfaces/search/*`          | `src/modules/search/domain/*`                          |
+| `src/infrastructure/s3/*`                 | `src/shared/infrastructure/s3/*`                       |
+| `src/infrastructure/logger/*`             | `src/shared/infrastructure/logger/*`                   |
+| `src/infrastructure/context/*`            | `src/shared/infrastructure/context/*`                  |
+| `src/infrastructure/http/clients/*`       | `src/shared/infrastructure/http/clients/*`             |
+| `src/infrastructure/employees-parser/*`   | `src/modules/employees-parser/*`                       |
+| `src/modules/prisma/*`                    | `src/shared/infrastructure/prisma/*`                   |
+| `src/modules/access-control/*`            | `src/shared/application/permission/*`                  |
+| `src/modules/bullmq/*`                    | `src/shared/infrastructure/bullmq/*`                   |
+| `src/user-provisioning/*`                 | `src/modules/user-provisioning/*`                      |
 | `src/modules/<фича>/<фича>.controller.ts` | `src/modules/<фича>/presentation/<фича>.controller.ts` |
-| `src/modules/<фича>/<фича>.service.ts` | `src/modules/<фича>/application/<фича>.service.ts` |
-| `src/modules/<фича>/<фича>.repository.ts` | `src/modules/<фича>/domain/<фича>.repository.ts` |
-| `src/modules/<фича>/dto/*` | `src/modules/<фича>/presentation/dto/*` |
-| `src/modules/<фича>/types/*` | `src/modules/<фича>/domain/types/*` |
+| `src/modules/<фича>/<фича>.service.ts`    | `src/modules/<фича>/application/<фича>.service.ts`     |
+| `src/modules/<фича>/<фича>.repository.ts` | `src/modules/<фича>/domain/<фича>.repository.ts`       |
+| `src/modules/<фича>/dto/*`                | `src/modules/<фича>/presentation/dto/*`                |
+| `src/modules/<фича>/types/*`              | `src/modules/<фича>/domain/types/*`                    |

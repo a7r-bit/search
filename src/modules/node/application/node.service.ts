@@ -7,6 +7,7 @@ import { ListNodesQueryDto } from '../presentation/dto/list-nodes.query';
 import { UpdateNodeDto } from '../presentation/dto/update-node.dto';
 import { NodeRepository } from '../domain/node.repository';
 import { NodeTreeRepository } from '../domain/node-tree.repository';
+import { NodeTreeService } from './node-tree.service';
 import { NodePermissionType, NodeType } from '@prisma/client';
 import { RequestUser } from '../../../shared/domain/types/request-user';
 import { SortingParam } from '../../../shared/presentation/decorators/sorting-params.decorator';
@@ -20,6 +21,7 @@ export class NodeService {
         private readonly documentVersionService: DocumentVersionService,
         private readonly nodeRepository: NodeRepository,
         private readonly nodeTreeRepository: NodeTreeRepository,
+        private readonly nodeTreeService: NodeTreeService,
         private readonly permissionResolverService: PermissionResolverService,
     ) {}
 
@@ -31,7 +33,7 @@ export class NodeService {
     }
 
     async create(dto: CreateNodeDto): Promise<NodeDto> {
-        const validateObj = await this.nodeTreeRepository.validateParent(dto.parentId ?? null);
+        const validateObj = await this.nodeTreeService.validateParent(dto.parentId ?? null);
         if (!validateObj.isValid) throw new BadRequestException(validateObj.error);
         await this.isUnique(dto.name, dto.type, dto.parentId ?? null);
         const created = await this.nodeRepository.create(dto);
@@ -100,7 +102,7 @@ export class NodeService {
 
     async move(id: string, newParentId: string | null): Promise<NodeDto> {
         await this.nodeRepository.findByIdOrThrow(id);
-        const validateObj = await this.nodeTreeRepository.validateParent(newParentId);
+        const validateObj = await this.nodeTreeService.validateParent(newParentId);
         if (!validateObj.isValid) throw new BadRequestException(validateObj.error);
 
         if (newParentId === id) throw new BadRequestException('Нельзя переместить в себя');

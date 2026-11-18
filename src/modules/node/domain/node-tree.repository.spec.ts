@@ -26,29 +26,21 @@ describe('NodeTreeRepository', () => {
         expect(repository).toBeDefined();
     });
 
-    describe('validateParent', () => {
-        it('returns valid for null parentId (root node)', async () => {
-            const result = await repository.validateParent(null);
-
-            expect(result).toEqual({ isValid: true });
-            expect(prisma.node.findUnique).not.toHaveBeenCalled();
-        });
-
-        it('returns valid for existing DIRECTORY parent', async () => {
+    describe('getParentInfo', () => {
+        it('returns parent id and type', async () => {
             prisma.node.findUnique.mockResolvedValue({ id: 'parent-1', type: NodeType.DIRECTORY });
 
-            const result = await repository.validateParent('parent-1');
+            const result = await repository.getParentInfo('parent-1');
 
-            expect(result).toEqual({ isValid: true });
+            expect(result).toEqual({ id: 'parent-1', type: NodeType.DIRECTORY });
         });
 
-        it('returns invalid for non-DIRECTORY parent', async () => {
-            prisma.node.findUnique.mockResolvedValue({ id: 'parent-1', type: NodeType.DOCUMENT });
+        it('returns null when parent is not found', async () => {
+            prisma.node.findUnique.mockResolvedValue(null);
 
-            const result = await repository.validateParent('parent-1');
+            const result = await repository.getParentInfo('missing-id');
 
-            expect(result.isValid).toBe(false);
-            expect(result.error).toContain(NodeType.DIRECTORY);
+            expect(result).toBeNull();
         });
     });
 

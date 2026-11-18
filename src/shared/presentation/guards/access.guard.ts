@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { PayloadDTO } from '../../../modules/token/presentation/dto/payload.dto';
 import { RequestUser } from '../../domain/types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';

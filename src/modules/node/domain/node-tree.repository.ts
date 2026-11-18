@@ -110,19 +110,10 @@ export class NodeTreeRepository {
         return rows.map((r) => r.id);
     }
 
-    async validateParent(parentId: string | null): Promise<{ isValid: boolean; error?: string }> {
-        if (!parentId) return { isValid: true };
-        const parent = await this.prisma.node.findUnique({
+    async getParentInfo(parentId: string): Promise<{ id: string; type: NodeType } | null> {
+        return await this.prisma.node.findUnique({
             where: { id: parentId },
             select: { id: true, type: true },
         });
-
-        if (parent.type !== NodeType.DIRECTORY) {
-            return { isValid: false, error: 'Родительская директория должна быть типа ' + NodeType.DIRECTORY };
-        }
-
-        return {
-            isValid: true,
-        };
     }
 }
