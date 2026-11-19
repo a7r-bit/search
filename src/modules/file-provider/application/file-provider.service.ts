@@ -1,5 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { S3Service } from '../../../shared/infrastructure/s3/s3.service';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import { DocumentVersionService } from '../../document-version/application/document-version.service';
@@ -8,11 +7,12 @@ import { NodeService } from '../../node/application/node.service';
 import { GroupService } from '../../politic/application/group.service';
 import { NodeAccessPolicyService } from '../../politic/application/node-access-policy.service';
 import { isUUID } from 'class-validator';
+import { FILE_STORAGE, FileStorage } from '../../../shared/domain/interfaces/file-storage.interface';
 
 @Injectable()
 export class FileProviderService {
     constructor(
-        private readonly s3Service: S3Service,
+        @Inject(FILE_STORAGE) private readonly fileStorage: FileStorage,
         private readonly documentVersionService: DocumentVersionService,
         private readonly nodeService: NodeService,
         private readonly groupService: GroupService,
@@ -29,7 +29,7 @@ export class FileProviderService {
                     message: 'Media file not found',
                 });
             }
-            const { url } = await this.s3Service.getFileUrl(documentVersion.mediaFile.fileUrl, expiresIn);
+            const { url } = await this.fileStorage.getFileUrl(documentVersion.mediaFile.fileUrl, expiresIn);
             return { url, fileName: documentVersion.mediaFile.fileName, extention: documentVersion.mediaFile.extention };
         } catch (error) {
             if (error instanceof RpcException) {

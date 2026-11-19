@@ -7,12 +7,12 @@ import { GroupService } from '../../politic/application/group.service';
 import { EmployeesParserService } from '../../employees-parser/application/employees-parser.service';
 import { UserProvisioningService } from '../../user-provisioning/application/user-provisioning.service';
 import { RequestUser } from '../../../shared/domain/types/request-user';
-import Logger, { LoggerKey } from '../../../shared/infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../../shared/infrastructure/logger/domain/logger';
 
 @Injectable()
 export class AuthService {
     constructor(
-        @Inject(LoggerKey) private readonly logger: Logger,
+        @Inject(LOGGER_KEY) private readonly logger: Logger,
         private readonly userService: UserService,
         private readonly roleService: RoleService,
         private readonly tokenService: TokenService,

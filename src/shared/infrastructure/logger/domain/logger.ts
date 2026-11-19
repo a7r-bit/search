@@ -1,7 +1,7 @@
 import { LogLevel, LogData } from './log';
 
 export const LoggerBaseKey = Symbol();
-export const LoggerKey = Symbol();
+export const LOGGER_KEY = Symbol();
 
 export default interface Logger {
     log(level: LogLevel, message: string | Error, data?: LogData, profile?: string): void;

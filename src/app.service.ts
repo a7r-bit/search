@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import Logger, { LoggerKey } from './shared/infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from './shared/infrastructure/logger/domain/logger';
 
 @Injectable()
 export class AppService {
-    constructor(@Inject(LoggerKey) private logger: Logger) {}
+    constructor(@Inject(LOGGER_KEY) private logger: Logger) {}
     async getHello() {
         // this.logger.fatal(
         //     "TestUserMessage",

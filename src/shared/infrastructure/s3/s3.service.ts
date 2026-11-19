@@ -5,11 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
 import path from 'path';
 import * as https from 'https';
+import { FileStorage } from '../../domain/interfaces/file-storage.interface';
 
 export type Prefix = 'original' | 'converted';
 
 @Injectable()
-export class S3Service {
+export class S3Service implements FileStorage {
     private readonly accessKey: string;
     private readonly secretKey: string;
     private readonly bucket: string;
@@ -52,7 +53,7 @@ export class S3Service {
         return `${this.useSSL ? 'https' : 'http'}://${raw}`;
     }
 
-    async uploadFile(file: Express.Multer.File, prefix: Prefix) {
+    async uploadFile(file: Express.Multer.File, prefix: Prefix): Promise<{ key: string }> {
         const uuid = crypto.randomUUID();
         const extension = path.extname(file.originalname ?? '').toLowerCase();
         const key = `${prefix}/${uuid}${extension}`;
@@ -122,7 +123,7 @@ export class S3Service {
         return Buffer.from(await response.Body?.transformToByteArray());
     }
 
-    async deleteFile(key: string) {
+    async deleteFile(key: string): Promise<{ message: string }> {
         await this.s3Client.send(
             new DeleteObjectCommand({
                 Bucket: this.bucket,

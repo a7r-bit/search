@@ -4,12 +4,12 @@ import { AppRole } from '../../domain/constants';
 import { RequestUser } from '../../domain/types/request-user';
 import { PermissionResolverService } from '../../application/permission/permission-resolver.service';
 import { NodePermissionType } from '@prisma/client';
-import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../infrastructure/logger/domain/logger';
 
 @Injectable()
 export class NodeAdminGuard implements CanActivate {
     constructor(
-        @Inject(LoggerKey) private readonly logger: Logger,
+        @Inject(LOGGER_KEY) private readonly logger: Logger,
         private readonly permissionResolverService: PermissionResolverService,
     ) {}
 

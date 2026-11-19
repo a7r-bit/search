@@ -5,11 +5,11 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { GotenbergService } from '../../../../../modules/gotenberg/application/gotenberg.service';
 import { PdfService } from '../../../../../modules/pdf/application/pdf.service';
 import { DocumentConversionJobDto } from './dto/document-conversion-job.dto';
-import { S3Service } from '../../../s3/s3.service';
 import path from 'path';
-import { LoggerKey } from '../../../logger/domain/logger';
+import { LOGGER_KEY } from '../../../logger/domain/logger';
 import { INDEX_WRITER, IndexWriter } from '../../../../../modules/search/domain/index-writer.interface';
 import { Kind } from '../../../../../modules/search/presentation/dto/search.types';
+import { FILE_STORAGE, FileStorage } from '../../../../domain/interfaces/file-storage.interface';
 
 @Processor('documentConversion')
 export class DocumentConversionProcessor extends WorkerHost {
@@ -17,8 +17,8 @@ export class DocumentConversionProcessor extends WorkerHost {
         private readonly prisma: PrismaService,
         private readonly gotenbergService: GotenbergService,
         private readonly pdfService: PdfService,
-        private readonly s3Service: S3Service,
-        @Inject(LoggerKey) private logger: Logger,
+        @Inject(FILE_STORAGE) private readonly fileStorage: FileStorage,
+        @Inject(LOGGER_KEY) private logger: Logger,
         @Inject(INDEX_WRITER) private readonly indexWriter: IndexWriter,
     ) {
         super();
@@ -35,11 +35,11 @@ export class DocumentConversionProcessor extends WorkerHost {
             data: { conversionStatus: 'IN_PROGRESS' },
         });
 
-        const fileBuffer = await this.s3Service.getFileBuffer(key);
+        const fileBuffer = await this.fileStorage.getFileBuffer(key);
 
         const fileName = path.basename(key);
         const pdfBuffer: Buffer = isPDF ? fileBuffer : await this.gotenbergService.convertDocxToPdf(fileBuffer, fileName);
-        const { key: outputKey } = await this.s3Service.uploadBufferAsPdf(pdfBuffer, 'converted');
+        const { key: outputKey } = await this.fileStorage.uploadBufferAsPdf(pdfBuffer, 'converted');
 
         await this.prisma.mediaFile.update({
             where: { id: mediaFile.id },

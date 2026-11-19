@@ -2,13 +2,13 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { DepartmentExternalDto, UserExternalDto } from '../domain/dto/user-external.dto';
 import { EmployeesApiClient } from '../../../shared/infrastructure/http/clients/employees-api.client';
-import Logger, { LoggerKey } from '../../../shared/infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../../shared/infrastructure/logger/domain/logger';
 
 @Injectable()
 export class EmployeesParserService {
     constructor(
         private readonly employeesClient: EmployeesApiClient,
-        @Inject(LoggerKey) private readonly logger: Logger,
+        @Inject(LOGGER_KEY) private readonly logger: Logger,
     ) {}
 
     async getUsersList(page = 1, limit = 100, order_dir = 'asc'): Promise<UserExternalDto[]> {

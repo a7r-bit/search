@@ -3,13 +3,13 @@ import { Reflector } from '@nestjs/core';
 import { ROLE_KEY } from '../decorators/role.decorator';
 import { RequestUser } from '../../domain/types/request-user';
 import { AppRole } from '../../domain/constants';
-import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../infrastructure/logger/domain/logger';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
     constructor(
         private reflector: Reflector,
-        @Inject(LoggerKey) private readonly logger: Logger,
+        @Inject(LOGGER_KEY) private readonly logger: Logger,
     ) {}
 
     canActivate(context: ExecutionContext): boolean {

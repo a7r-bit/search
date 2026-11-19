@@ -1,5 +1,5 @@
 import { Global, Inject, MiddlewareConsumer, Module, NestModule, Scope } from '@nestjs/common';
-import Logger, { LoggerBaseKey, LoggerKey } from '../../../domain/logger';
+import Logger, { LoggerBaseKey, LOGGER_KEY } from '../../../domain/logger';
 import WinstonLogger, { WinstonLoggerTransportsKey } from '../winston.logger';
 import LoggerService from '../../../domain/loggerService';
 import NestjsLoggerServiceAdapter from './nestjsLoggerServiceAdapter';
@@ -17,14 +17,14 @@ import morgan from 'morgan';
             useClass: WinstonLogger,
         },
         {
-            provide: LoggerKey,
+            provide: LOGGER_KEY,
             useClass: LoggerService,
             scope: Scope.TRANSIENT,
         },
         {
             provide: NestjsLoggerServiceAdapter,
             useFactory: (logger: Logger) => new NestjsLoggerServiceAdapter(logger),
-            inject: [LoggerKey],
+            inject: [LOGGER_KEY],
         },
         {
             provide: WinstonLoggerTransportsKey,
@@ -39,11 +39,11 @@ import morgan from 'morgan';
             inject: [ConfigService],
         },
     ],
-    exports: [LoggerKey, NestjsLoggerServiceAdapter],
+    exports: [LOGGER_KEY, NestjsLoggerServiceAdapter],
 })
 export class LoggerModule implements NestModule {
     public constructor(
-        @Inject(LoggerKey) private logger: Logger,
+        @Inject(LOGGER_KEY) private logger: Logger,
         private configService: ConfigService,
     ) {}
 

@@ -7,7 +7,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../infrastructure/logger/domain/logger';
 import { classifyLdapError, classifyLdapFailure, LdapFailure } from '../../../modules/ldap/domain/ldap-failure';
 
 /**
@@ -21,7 +21,7 @@ import { classifyLdapError, classifyLdapFailure, LdapFailure } from '../../../mo
  */
 @Injectable()
 export class LdapAuthGuard extends AuthGuard('ldap') {
-    constructor(@Inject(LoggerKey) private readonly logger: Logger) {
+    constructor(@Inject(LOGGER_KEY) private readonly logger: Logger) {
         super();
     }
 

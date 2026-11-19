@@ -4,7 +4,7 @@ import { RequestUser } from '../../domain/types/request-user';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import ContextStorageService, { ContextStorageServiceKey } from '../../infrastructure/context/domain/interfaces/contextStorageService';
-import Logger, { LoggerKey } from '../../infrastructure/logger/domain/logger';
+import Logger, { LOGGER_KEY } from '../../infrastructure/logger/domain/logger';
 import { TOKEN_VERIFIER, TokenVerifier } from '../../domain/interfaces/token-verifier.interface';
 import { ROLE_RESOLVER, RoleResolver } from '../../domain/interfaces/role-resolver.interface';
 import { USER_PROVIDER, UserProvider } from '../../domain/interfaces/user-provider.interface';
@@ -27,7 +27,7 @@ import { USER_PROVIDER, UserProvider } from '../../domain/interfaces/user-provid
 @Injectable()
 export class AccessGuard implements CanActivate {
     constructor(
-        @Inject(LoggerKey) private readonly logger: Logger,
+        @Inject(LOGGER_KEY) private readonly logger: Logger,
         @Inject(TOKEN_VERIFIER) private readonly tokenService: TokenVerifier,
         @Inject(ROLE_RESOLVER) private readonly roleService: RoleResolver,
         @Inject(USER_PROVIDER) private readonly userService: UserProvider,
