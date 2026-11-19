@@ -18,22 +18,22 @@ import { S3Service } from './s3.service';
 
 class S3FileExistsResponseDto {
     @ApiProperty({ example: true, description: 'Флаг существования файла в S3' })
-    exists: boolean;
+    exists!: boolean;
 }
 
 class S3UploadFileResponseDto {
     @ApiProperty({ example: 'original/2f18ee9f-4763-4d5f-bf89-8d205f7c6ca8.pdf', description: 'Ключ загруженного файла в S3' })
-    key: string;
+    key!: string;
 }
 
 class S3GetFileUrlResponseDto {
     @ApiProperty({ example: 'https://s3.example.com/bucket/original/file.pdf?...', description: 'Подписанный URL файла' })
-    url: string;
+    url!: string;
 }
 
 class S3DeleteFileResponseDto {
     @ApiProperty({ example: 'File deleted successfully', description: 'Результат удаления файла' })
-    message: string;
+    message!: string;
 }
 
 class S3UploadFileRequestDto {

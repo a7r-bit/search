@@ -8,7 +8,7 @@ export class ListGroupQueryDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    page: number;
+    page!: number;
 
     @ApiProperty({ description: 'Количество элементов на странице', default: 20 })
     @IsOptional()

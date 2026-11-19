@@ -6,12 +6,12 @@ import { ArrayNotEmpty, IsArray, IsEnum, IsUUID, ValidateNested } from 'class-va
 export class UpdateGroupAccessItemDTO {
     @ApiProperty({ description: 'ID группы' })
     @IsUUID()
-    groupId: string;
+    groupId!: string;
 
     @ApiProperty({ description: 'Права доступа группы к узлу', enum: NodePermissionType, isArray: true })
     @IsArray()
     @IsEnum(NodePermissionType, { each: true })
-    accesses: NodePermissionType[];
+    accesses!: NodePermissionType[];
 }
 
 export class UpdateGroupsAccessesDTO {
@@ -20,5 +20,5 @@ export class UpdateGroupsAccessesDTO {
     @ArrayNotEmpty()
     @ValidateNested({ each: true })
     @Type(() => UpdateGroupAccessItemDTO)
-    groups: UpdateGroupAccessItemDTO[];
+    groups!: UpdateGroupAccessItemDTO[];
 }

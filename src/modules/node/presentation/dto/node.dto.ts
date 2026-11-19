@@ -3,25 +3,25 @@ import { NodeType } from '@prisma/client';
 
 export class NodeDto {
     @ApiProperty()
-    id: string;
+    id!: string;
     @ApiProperty({ enum: NodeType })
-    type: NodeType;
+    type!: NodeType;
 
     @ApiProperty({ nullable: true })
-    parentId: string | null;
+    parentId!: string | null;
 
     @ApiProperty()
-    name: string;
+    name!: string;
     @ApiProperty({ nullable: true })
-    description: string | null;
+    description!: string | null;
 
     @ApiProperty()
-    createdAt: Date;
+    createdAt!: Date;
     @ApiProperty()
-    updatedAt: Date;
+    updatedAt!: Date;
 }
 
 export class NodeWithChildrens extends NodeDto {
     @ApiProperty({ isArray: true })
-    children: NodeDto[];
+    children!: NodeDto[];
 }

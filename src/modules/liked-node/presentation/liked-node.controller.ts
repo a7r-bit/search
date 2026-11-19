@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { LikedNodeService } from '../application/liked-node.service';
 import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { NodeDto } from '../../node/presentation/dto/node.dto';
 import { CustomParseUUIDPipe } from '../../../shared/presentation/pipes/custom-parse-uuid.pipe';
+import { User } from '../../../shared/presentation/decorators/user.decorator';
+import { RequestUser } from '../../../shared/domain/types/request-user';
 
 @Controller('liked-node')
 export class LikedNodeController {
@@ -20,8 +22,8 @@ export class LikedNodeController {
         type: [NodeDto],
         description: 'Успешный ответ',
     })
-    async findAllLikedDir(@Req() req) {
-        return await this.likedNodeService.getMyLikedNodes(req.user.id as string);
+    async findAllLikedDir(@User() user: RequestUser) {
+        return await this.likedNodeService.getMyLikedNodes(user.id);
     }
 
     @Post()
@@ -36,7 +38,7 @@ export class LikedNodeController {
         description: 'Успешный ответ',
     })
     @ApiBody({ type: String, required: true, description: 'nodeId' })
-    async toggleLikedDir(@Req() req, @Body('nodeId', new CustomParseUUIDPipe()) nodeId: string) {
-        return await this.likedNodeService.toggleNode(req.user.id, nodeId);
+    async toggleLikedDir(@User() user: RequestUser, @Body('nodeId', new CustomParseUUIDPipe()) nodeId: string) {
+        return await this.likedNodeService.toggleNode(user.id, nodeId);
     }
 }

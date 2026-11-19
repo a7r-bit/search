@@ -5,5 +5,5 @@ export class CreateGroupDTO {
     @ApiProperty({ description: 'Название грппы политики' })
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name!: string;
 }

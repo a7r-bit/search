@@ -5,7 +5,7 @@ import { NodeType } from '@prisma/client';
 export class CreateNodeDto {
     @ApiProperty({ description: 'Тип node', enum: NodeType })
     @IsEnum(NodeType)
-    type: NodeType;
+    type!: NodeType;
 
     @ApiProperty({ description: 'Id родителя' })
     @IsOptional()
@@ -16,7 +16,7 @@ export class CreateNodeDto {
     @IsString()
     @MinLength(1)
     @MaxLength(255)
-    name: string;
+    name!: string;
 
     @ApiProperty({ description: 'Описание' })
     @IsOptional()

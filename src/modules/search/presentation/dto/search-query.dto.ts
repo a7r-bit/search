@@ -6,7 +6,7 @@ export class SearchQuery {
     @ApiProperty({ description: 'Поисковый запрос', example: 'отчёт по продажам' })
     @IsString()
     @IsNotEmpty()
-    readonly query: string;
+    readonly query!: string;
 
     @ApiPropertyOptional({ description: 'Тип элемента', enum: Kind, default: Kind.UNSPECIFIED })
     @IsOptional()

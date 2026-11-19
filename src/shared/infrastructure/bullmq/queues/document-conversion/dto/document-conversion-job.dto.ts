@@ -1,5 +1,5 @@
 export class DocumentConversionJobDto {
-    documentVersionId: string;
-    key: string;
-    isPDF: boolean;
+    documentVersionId!: string;
+    key!: string;
+    isPDF!: boolean;
 }

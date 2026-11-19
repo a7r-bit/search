@@ -1,5 +1,8 @@
-import { Controller, Post, UseGuards, Request, Body, Get } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, Get } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
+import { User } from '../../../shared/presentation/decorators/user.decorator';
+import { LdapUserPayload } from '../../ldap/domain/ldap.user.payload';
+import { RequestUser } from '../../../shared/domain/types/request-user';
 import {
     ApiBadRequestResponse,
     ApiBearerAuth,
@@ -40,8 +43,8 @@ export class AuthController {
         },
     })
     @ApiBody({ required: true, type: SignInDto })
-    async login(@Request() req) {
-        return await this.authService.signIn(req);
+    async login(@User() user: LdapUserPayload) {
+        return await this.authService.signIn(user);
     }
 
     @Post('switch-role')
@@ -74,8 +77,8 @@ export class AuthController {
             },
         },
     })
-    async switchRole(@Request() req, @Body() body: SwitchRoleDto) {
-        return await this.authService.switchRole(req, body.requireRole);
+    async switchRole(@User() user: RequestUser, @Body() body: SwitchRoleDto) {
+        return await this.authService.switchRole(user, body.requireRole);
     }
     @Get('me')
     @ApiBearerAuth('access-token')
@@ -84,8 +87,8 @@ export class AuthController {
         description: 'Получение информации о текущем пользователе',
     })
     @ApiOkResponse({ type: UserDTO })
-    async getMe(@Request() req) {
-        return await this.authService.getMe(req);
+    async getMe(@User() user: RequestUser) {
+        return await this.authService.getMe(user);
     }
 
     @Post('signOut')
@@ -94,7 +97,7 @@ export class AuthController {
         summary: 'Выход пользователя из системы',
         description: 'Выход пользователя из системы',
     })
-    async signOut(@Request() req) {
-        return await this.authService.signOut(req);
+    async signOut(@User() user: RequestUser) {
+        return await this.authService.signOut(user);
     }
 }

@@ -4,15 +4,15 @@ import { Role } from '@prisma/client';
 export class CreateUserDto {
     @IsString()
     @IsNotEmpty()
-    uidNumber: string;
+    uidNumber!: string;
 
     @IsString()
     @IsNotEmpty()
-    firstName: string;
+    firstName!: string;
 
     @IsString()
     @IsNotEmpty()
-    middleName: string;
+    middleName!: string;
 
     @IsArray()
     @IsString({ each: true })

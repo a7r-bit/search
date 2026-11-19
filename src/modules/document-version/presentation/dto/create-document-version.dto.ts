@@ -10,5 +10,5 @@ export class CreateDocumentVersionDto {
     @IsString()
     @IsNotEmpty()
     @IsUUID()
-    nodeId: string;
+    nodeId!: string;
 }

@@ -1,7 +1,7 @@
 # План рефакторинга архитектуры проекта Search
 
 > **Дата создания:** 2025-06-18
-> **Последнее обновление:** 2026-11-09
+> **Последнее обновление:** 2026-11-19
 > **Цели:** Улучшение соответствия требованиям LDAP, полное удаление поискового движка Elasticsearch (реализован как отдельный микросервис), улучшение общей архитектуры и соответствия SOLID
 
 > **Структура кода (важно):** с 2026-11-09 `src/` перестроен в **feature-first DDD** (см. `RESTRUCTURE_PLAN.md`):
@@ -217,17 +217,15 @@ export interface LdapConfig {
 
 ### 3.3 Разделить «боги»-сервисы (принцип S — Single Responsibility)
 
-- [ ] **NodeService** (`modules/node/application/node.service.ts`):
+- [x] **NodeService** (`modules/node/application/node.service.ts`):
     - `NodeRepository` / `NodeTreeRepository` — уже в `modules/node/domain/` (обёртки над Prisma, включая `getDescendantIds`/CTE)
-    - `NodeTreeService` (`validateParent`, `isDescendant`, `getPath`) — вынести из репозитория
+    - `NodeTreeService` (`validateParent`, `isDescendant`, `getPath`) — вынесена из репозитория
     - Индексирование — только через `IndexWriter` (`modules/search/domain`) или доменные события (см. 3.4)
-- [ ] **DocumentVersionService** (`modules/document-version/application/document-version.service.ts`):
+- [x] **DocumentVersionService** (`modules/document-version/application/document-version.service.ts`):
     - работа с хранилищем — только через интерфейс `FileStorage`
-    - `normalizeUploadedFileName` вынести в утилиту
+    - `normalizeUploadedFileName` вынесена в утилиту (`application/file-name.util.ts` + spec; latin1→utf8 для mojibake, имена без mojibake не трогаются)
     - постановку в очередь — через интерфейс `ConversionQueue`
-- [ ] **PoliticService** (`modules/politic/application/politic.service.ts`):
-    - `GroupService` (CRUD, addUsersToGroup, ...)
-    - `NodeAccessPolicyService` (`checkUserToNodeAccess`, `resolveNodePermissions`, `hasAdminOnNode`)
+- [x] **PoliticService** — разделён на `GroupService` (CRUD, addUsersToGroup, ...) и `NodeAccessPolicyService` (`checkUserToNodeAccess`, `resolveNodePermissions`, `hasAdminOnNode`)
 
 ### 3.4 Индексирование — побочный эффект через события (принципы S и O)
 
@@ -236,8 +234,8 @@ export interface LdapConfig {
 
 ### 3.5 Файловое хранилище за интерфейсом (принцип D)
 
-- [ ] Интерфейс `FileStorage` (`uploadFile`, `uploadBuffer`, `getFileBuffer`, `getFileUrl`, `deleteFile`, `exists`) — `S3Service` (`shared/infrastructure/s3/s3.service.ts`) становится одной из реализаций
-- [ ] `DocumentVersionService`, `DocumentConversionProcessor` (`shared/infrastructure/bullmq/...`), `FileProviderService` зависят от `FileStorage`, не от `S3Service`
+- [x] Интерфейс `FileStorage` (`uploadFile`, `uploadBuffer`, `getFileBuffer`, `getFileUrl`, `deleteFile`, `exists`) — `S3Service` (`shared/infrastructure/s3/s3.service.ts`) становится одной из реализаций
+- [x] `DocumentVersionService`, `DocumentConversionProcessor` (`shared/infrastructure/bullmq/...`), `FileProviderService` зависят от `FileStorage`, не от `S3Service`
 
 ### 3.6 Убрать `any` и включить `strict` инкрементально
 

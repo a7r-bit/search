@@ -31,20 +31,20 @@ export class EmployeesApiClient {
         });
     }
 
-    async fetchEmployees(page: number = 1, limit: number = 10, order_dir: string): Promise<any> {
+    async fetchEmployees(page: number = 1, limit: number = 10, order_dir: string): Promise<Record<string, unknown>[]> {
         const response = await this.client.get('/api/workers/', { params: { page, limit, order_dir } });
         return response.data;
     }
-    async fetchDepartments(page: number = 1, limit: number = 10, order_dir: string): Promise<any> {
+    async fetchDepartments(page: number = 1, limit: number = 10, order_dir: string): Promise<Record<string, unknown>[]> {
         const response = await this.client.get('/api/departments/', { params: { page, limit, order_dir } });
         return response.data;
     }
-    async fetchUserByTabNumber(tabNumber: string): Promise<any> {
+    async fetchUserByTabNumber(tabNumber: string): Promise<Record<string, unknown>> {
         const data = await this.client.get(`/api/workers/by-tab-num/${tabNumber}`, {});
         return data.data;
     }
     async getDepartmentArrayFromHierarchy(departments: DepartmentExternalDto[]): Promise<DepartmentExternalDto[]> {
-        const result = [];
+        const result: DepartmentExternalDto[] = [];
         async function walk(nodes: DepartmentExternalDto[]) {
             for (const node of nodes) {
                 result.push({ id: node.id, name: node.name, children: node.children });

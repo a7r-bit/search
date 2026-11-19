@@ -4,5 +4,5 @@ import { GroupDTO } from '../../../../shared/domain/types/group-dto';
 
 export class GroupWithAccessesDTO extends GroupDTO {
     @ApiProperty({ description: 'Права доступа группы к узлу', enum: NodePermissionType, isArray: true })
-    accesses: NodePermissionType[];
+    accesses!: NodePermissionType[];
 }

@@ -12,6 +12,7 @@ import { INDEX_WRITER, IndexWriter } from '../../search/domain/index-writer.inte
 import { SearchIndexPayload } from '../../search/domain/search-payload.interface';
 import { Kind } from '../../search/presentation/dto/search.types';
 import { DocumentVersionRepository } from '../domain/document-version.repository';
+import { normalizeUploadedFileName } from './file-name.util';
 import Logger, { LOGGER_KEY } from '../../../shared/infrastructure/logger/domain/logger';
 
 @Injectable()
@@ -23,12 +24,6 @@ export class DocumentVersionService {
         @Inject(FILE_STORAGE) private readonly fileStorage: FileStorage,
         @Inject(INDEX_WRITER) private readonly indexWriter: IndexWriter,
     ) {}
-
-    private normalizeUploadedFileName(fileName: string): string {
-        const decoded = Buffer.from(fileName, 'latin1').toString('utf8');
-        const hasMojibake = /[ÐÑ]/.test(fileName);
-        return hasMojibake ? decoded : fileName;
-    }
 
     // Индексация по версиям: каждая версия — отдельная запись (externalId = version.id),
     // новые версии не перезаписывают старые
@@ -101,7 +96,7 @@ export class DocumentVersionService {
         if (!node || node.type !== NodeType.DOCUMENT) {
             throw new NotFoundException('Родительский докумет не найден');
         }
-        const normalizedFileName = this.normalizeUploadedFileName(file.originalname);
+        const normalizedFileName = normalizeUploadedFileName(file.originalname);
         const ext = path.extname(normalizedFileName).toLocaleLowerCase();
 
         const isPDF = ext == '.pdf';

@@ -7,6 +7,7 @@ import { GroupService } from '../../politic/application/group.service';
 import { EmployeesParserService } from '../../employees-parser/application/employees-parser.service';
 import { UserProvisioningService } from '../../user-provisioning/application/user-provisioning.service';
 import { RequestUser } from '../../../shared/domain/types/request-user';
+import { LdapUserPayload } from '../../ldap/domain/ldap.user.payload';
 import Logger, { LOGGER_KEY } from '../../../shared/infrastructure/logger/domain/logger';
 
 @Injectable()
@@ -20,10 +21,8 @@ export class AuthService {
         private readonly employeesService: EmployeesParserService,
         private readonly userProvisioningService: UserProvisioningService,
     ) {}
-    async signIn(req: any) {
-        const reqUser: RequestUser = req.user;
-
-        const userExternal = await this.employeesService.getUserByTabNumber(reqUser.uidNumber);
+    async signIn(ldapUser: LdapUserPayload) {
+        const userExternal = await this.employeesService.getUserByTabNumber(ldapUser.uidNumber);
         const externalPoliticGroups = await this.employeesService.getDepartmentArrayFromHierarchy(userExternal.departments);
         const user = await this.userProvisioningService.provisionFromExternal({
             uidNumber: userExternal.ldap_tab_num,
@@ -59,17 +58,15 @@ export class AuthService {
         };
     }
 
-    async switchRole(req: any, roleName: string) {
-        const reqUser: RequestUser = req.user;
-
-        if (!reqUser) {
+    async switchRole(requestUser: RequestUser, roleName: string) {
+        if (!requestUser) {
             throw new BadRequestException('Пользователь не найден');
         }
 
-        const user = await this.userService.findOne(reqUser.id);
+        const user = await this.userService.findOne(requestUser.id);
 
         const requiredRole = await this.roleService.getRoleByName(roleName);
-        const userRoles = await this.roleService.getRoleByUserId(reqUser.id);
+        const userRoles = await this.roleService.getRoleByUserId(requestUser.id);
 
         if (!userRoles.some((role) => role.id == requiredRole.id)) {
             throw new ForbiddenException(`У пользователя нет доступа к роли ${roleName}`);
@@ -82,7 +79,7 @@ export class AuthService {
             activeRole: requiredRole.name,
             politicGroups: politicGroups.map((g) => g.id),
         };
-        this.logger.warn(`Смена роли userId: ${reqUser.id} с ${reqUser.activeRole} на ${requiredRole.name}`);
+        this.logger.warn(`Смена роли userId: ${requestUser.id} с ${requestUser.activeRole} на ${requiredRole.name}`);
 
         const tokens = await this.tokenService.generateTokens(payload);
         return {
@@ -100,24 +97,22 @@ export class AuthService {
             },
         };
     }
-    async getMe(req: any) {
-        const reqUser: RequestUser = req.user;
-        const user = await this.userService.findOne(reqUser.id);
-        const userRoles = await this.roleService.getRoleByUserId(reqUser.id);
+    async getMe(requestUser: RequestUser) {
+        const user = await this.userService.findOne(requestUser.id);
+        const userRoles = await this.roleService.getRoleByUserId(requestUser.id);
 
         return {
             id: user.id,
             uidNumber: user.uidNumber,
             firstName: user.firstName,
             middleName: user.middleName,
-            activeRole: reqUser.activeRole,
+            activeRole: requestUser.activeRole,
             roles: userRoles.map((r) => r.name),
         };
     }
 
-    async signOut(req: any) {
-        const reqUser: RequestUser = req.user;
-        await this.tokenService.remoteRefreshToken(reqUser.id);
+    async signOut(requestUser: RequestUser) {
+        await this.tokenService.remoteRefreshToken(requestUser.id);
         return { message: 'Выход из системы успешно выполнен' };
     }
 }

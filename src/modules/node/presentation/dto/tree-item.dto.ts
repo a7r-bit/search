@@ -3,42 +3,42 @@ import { ConversionStatus, NodePermissionType } from '@prisma/client';
 
 export class TreeDocumentDto {
     @ApiProperty({ description: 'ID последней версии документа', format: 'uuid' })
-    latestVersionId: string;
+    latestVersionId!: string;
 
     @ApiProperty({ description: 'Номер версии документа' })
-    version: number;
+    version!: number;
 
     @ApiProperty({ description: 'Имя файла' })
-    fileName: string;
+    fileName!: string;
 
     @ApiProperty({ description: 'URL файла' })
-    fileUrl: string;
+    fileUrl!: string;
 
     @ApiProperty({ description: 'Статус конвертации', enum: ConversionStatus })
-    conversionStatus: ConversionStatus;
+    conversionStatus!: ConversionStatus;
 
     @ApiProperty({ description: 'Дата обновления', type: String, format: 'date-time' })
-    updatedAt: Date;
+    updatedAt!: Date;
 }
 
 export class TreeItemDto {
     @ApiProperty({ description: 'ID узла', format: 'uuid' })
-    id: string;
+    id!: string;
 
     @ApiProperty({ description: 'ID родительского узла', format: 'uuid', nullable: true })
-    parentId: string | null;
+    parentId!: string | null;
 
     @ApiProperty({ description: 'Тип элемента в дереве', enum: ['directory', 'file'] })
-    kind: 'directory' | 'file';
+    kind!: 'directory' | 'file';
 
     @ApiProperty({ description: 'Название элемента' })
-    name: string;
+    name!: string;
 
     @ApiProperty({ description: 'Есть ли дочерние элементы' })
-    hasChildren: boolean;
+    hasChildren!: boolean;
 
     @ApiProperty({ description: 'Права доступа к элементу', enum: NodePermissionType, isArray: true })
-    permissions: NodePermissionType[];
+    permissions!: NodePermissionType[];
 
     @ApiPropertyOptional({ description: 'Информация о документе', type: TreeDocumentDto, nullable: true })
     document?: TreeDocumentDto | null;

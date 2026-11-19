@@ -5,10 +5,10 @@ export class SignInDto {
     @ApiProperty({ example: '1000', description: 'Табельный номер пользователя' })
     @IsString()
     @IsNotEmpty()
-    username: string;
+    username!: string;
 
     @ApiProperty({ example: '12345', description: 'Пароль пользователя' })
     @IsString()
     @IsNotEmpty()
-    password: string;
+    password!: string;
 }

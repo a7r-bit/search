@@ -4,5 +4,5 @@ import { NodePermissionType } from '@prisma/client';
 
 export class NodeWithPermissionsDto extends NodeDto {
     @ApiProperty({ enum: NodePermissionType, isArray: true })
-    permissions: NodePermissionType[];
+    permissions!: NodePermissionType[];
 }

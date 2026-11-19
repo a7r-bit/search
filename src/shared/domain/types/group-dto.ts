@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class GroupDTO {
     @ApiProperty()
-    id: string;
+    id!: string;
 
     @ApiProperty()
-    name: string;
+    name!: string;
 }

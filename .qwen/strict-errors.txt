@@ -1,0 +1,20 @@
+Остаток strict-ошибок после шагов 1-3 плана 3.6 (2026-11-19): 22 ошибки, все strictNullChecks (шаг 4)
+
+src/modules/node/application/node.service.spec.ts:90:94 - TS2345: 'undefined' не присваивается в 'SortingParam' (×4: строки 90, 101, 109, 120)
+src/modules/node/application/node.service.ts:114:62 - TS2322: 'string | null' → 'string | undefined' (UpdateNodeDto.parentId → nodeRepository.update)
+src/modules/node/domain/node.repository.ts:28:9 - TS2322: Prisma findUnique возвращает T | null
+src/modules/node/domain/node.repository.ts:53:9 - TS2322: Prisma findUnique возвращает T | null
+src/modules/node/presentation/node.controller.ts:54:65 - TS2345: 'SortingParam | undefined' → 'SortingParam' (listChildren)
+src/modules/politic/application/node-access-policy.service.ts:67:13 - TS2532: groupsByNode.get(a.nodeId) possibly undefined
+src/modules/user/application/user.service.ts:48:71 - TS2345: 'string | undefined' (updateUserDto.uidNumber) → 'string'
+src/modules/user/domain/user.repository.ts:18:9 - TS2322: Prisma findFirst возвращает T | null
+src/modules/user/domain/user.repository.ts:23:9 - TS2322: Prisma findFirst возвращает T | null
+src/shared/infrastructure/http/clients/gotenberg.client.ts:12:9 - TS2322: config.get<string>('GOTENBERG_HOST') → string | undefined
+src/shared/infrastructure/http/clients/gotenberg.client.ts:13:9 - TS2322: config.get<number>('GOTENBERG_PORT') → number | undefined
+src/shared/infrastructure/http/clients/search-api.client.ts:15:9 - TS2322: config.get<string>('SEARCH_SERVICE_URL')
+src/shared/infrastructure/http/clients/search-api.client.ts:16:9 - TS2322: config.get<string>('SEARCH_TENANT_ID')
+src/shared/infrastructure/logger/domain/loggerService.ts:26:9 - TS2322: config.get<string>('ORGANIZATION')
+src/shared/infrastructure/logger/domain/loggerService.ts:27:9 - TS2322: config.get<string>('CONTEXT')
+src/shared/infrastructure/logger/domain/loggerService.ts:28:9 - TS2322: config.get<string>('APP')
+src/shared/infrastructure/s3/s3.service.ts:108:33 - TS2769: response.Body?.transformToByteArray() → Uint8Array | undefined
+src/shared/infrastructure/s3/s3.service.ts:123:28 - TS2769: то же

@@ -4,12 +4,12 @@ export class PayloadDTO {
     @IsString()
     @IsNotEmpty()
     @IsUUID()
-    id: string;
+    id!: string;
 
     @IsString()
-    activeRole: string;
+    activeRole!: string;
 
     @IsArray()
     @IsString({ each: true })
-    politicGroups: string[];
+    politicGroups!: string[];
 }

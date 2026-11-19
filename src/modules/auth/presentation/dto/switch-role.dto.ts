@@ -5,5 +5,5 @@ export class SwitchRoleDto {
     @ApiProperty({ example: 'Admin' })
     @IsString()
     @IsNotEmpty()
-    requireRole: string;
+    requireRole!: string;
 }

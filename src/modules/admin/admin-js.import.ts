@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import type { ActionResponse } from 'adminjs' with { 'resolution-mode': 'import' };
 
 const ADMIN_TAB_NUMS = ['12513', '12755'];
 
@@ -105,7 +106,7 @@ export const adminJsImport = import('@adminjs/nestjs').then(({ AdminModule }) =>
 
                                 actions: {
                                     show: {
-                                        after: async (response) => {
+                                        after: async (response: ActionResponse) => {
                                             const record = response.record;
                                             if (!record?.params?.id) return response;
                                             const user = await prisma.user.findUnique({

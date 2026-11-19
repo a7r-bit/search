@@ -7,11 +7,11 @@ export class PathPart {
         nullable: true,
         example: null,
     })
-    id: string | null;
+    id!: string | null;
 
     @ApiProperty({
         description: 'Название node',
         example: 'Документы',
     })
-    name: string;
+    name!: string;
 }

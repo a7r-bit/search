@@ -16,8 +16,9 @@ export class EmployeesParserService {
             const data = await this.employeesClient.fetchEmployees(page, limit, order_dir);
 
             return data.map((user) => plainToInstance(UserExternalDto, user, { excludeExtraneousValues: true }));
-        } catch (e) {
-            this.logger.error(`Error fetching users list: ${e.message}`);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            this.logger.error(`Error fetching users list: ${message}`);
             throw new BadRequestException('Ошибка при получении списка сотрудников');
         }
     }
@@ -27,8 +28,9 @@ export class EmployeesParserService {
             const data = await this.employeesClient.fetchDepartments(page, limit, order_dir);
             const departments = plainToInstance(DepartmentExternalDto, data as object[], { excludeExtraneousValues: true });
             return await this.getDepartmentArrayFromHierarchy(departments);
-        } catch (e) {
-            this.logger.error(`Error fetching departments list: ${e.message}`);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            this.logger.error(`Error fetching departments list: ${message}`);
             throw new BadRequestException('Ошибка при получении списка подразделений');
         }
     }
@@ -37,14 +39,15 @@ export class EmployeesParserService {
         try {
             const data = await this.employeesClient.fetchUserByTabNumber(tabNumber);
             return plainToInstance(UserExternalDto, data);
-        } catch (e) {
-            this.logger.error(`Error fetching user by tab number ${tabNumber}: ${e.message}`);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            this.logger.error(`Error fetching user by tab number ${tabNumber}: ${message}`);
             throw new BadRequestException('Данные пользователя не найдены');
         }
     }
 
     async getDepartmentArrayFromHierarchy(departments: DepartmentExternalDto[]): Promise<DepartmentExternalDto[]> {
-        const result = [];
+        const result: DepartmentExternalDto[] = [];
         async function walk(nodes: DepartmentExternalDto[]) {
             for (const node of nodes) {
                 result.push({ id: node.id, name: node.name, children: node.children });

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { NodeService } from '../application/node.service';
 import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateNodeDto } from './dto/create-node.dto';
@@ -11,6 +11,7 @@ import { ApiSortingQuery } from '../../../shared/presentation/decorators/sorting
 import { SortingParams, SortingParam } from '../../../shared/presentation/decorators/sorting-params.decorator';
 import { PathPart } from '../../../shared/domain/types/path-part.dto';
 import { CustomParseUUIDPipe } from '../../../shared/presentation/pipes/custom-parse-uuid.pipe';
+import { User } from '../../../shared/presentation/decorators/user.decorator';
 import { RequestUser } from '../../../shared/domain/types/request-user';
 import { TreeItemDto } from './dto/tree-item.dto';
 
@@ -47,10 +48,10 @@ export class NodeController {
     @ApiSortingQuery([...Object.values(NodeSortParamsEnum)])
     async findChildren(
         @Query() query: ListNodesQueryDto,
-        @Req() req,
+        @User() user: RequestUser,
         @SortingParams([...Object.values(NodeSortParamsEnum)]) sort?: SortingParam,
     ): Promise<TreeItemDto[]> {
-        return await this.nodeService.listChildren(query, req.user as RequestUser, sort);
+        return await this.nodeService.listChildren(query, user, sort);
     }
 
     @Get(':id')
