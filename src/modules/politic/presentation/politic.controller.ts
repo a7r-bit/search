@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Put, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
-import { PoliticService } from '../application/politic.service';
+import { GroupService } from '../application/group.service';
+import { NodeAccessPolicyService } from '../application/node-access-policy.service';
 import { ListGroupQueryDto } from './dto/list-group-query.dto';
 import { PaginatedGroupResponseDto } from './dto/paginated-group-response.dto';
 import { GroupWithAccessesDTO } from './dto/group-with-accesses.dto';
@@ -11,7 +12,10 @@ import { UpdateGroupsAccessesDTO } from './dto/update-group-access.dto';
 @Controller('politic')
 @ApiBearerAuth('access-token')
 export class PoliticController {
-    constructor(private readonly politicService: PoliticService) {}
+    constructor(
+        private readonly groupService: GroupService,
+        private readonly nodeAccessPolicyService: NodeAccessPolicyService,
+    ) {}
 
     @Get('groups')
     @ApiOperation({
@@ -20,7 +24,7 @@ export class PoliticController {
     })
     @ApiOkResponse({ type: PaginatedGroupResponseDto })
     async listGroups(@Query() query: ListGroupQueryDto): Promise<PaginatedGroupResponseDto> {
-        return await this.politicService.listGroups(query);
+        return await this.groupService.listGroups(query);
     }
 
     @Get('groups/accesses')
@@ -31,7 +35,7 @@ export class PoliticController {
     })
     @ApiOkResponse({ type: GroupWithAccessesDTO, isArray: true })
     async groupsWithAccesses(@Query() query: GroupsForNodeQueryDto): Promise<GroupWithAccessesDTO[]> {
-        return await this.politicService.getGroupsForNode(query.nodeId);
+        return await this.nodeAccessPolicyService.getGroupsForNode(query.nodeId);
     }
 
     @Put('groups/accesses')
@@ -47,6 +51,6 @@ export class PoliticController {
         @Query() query: GroupsForNodeQueryDto,
         @Body() body: UpdateGroupsAccessesDTO,
     ): Promise<GroupWithAccessesDTO[]> {
-        return await this.politicService.updateGroupsAccesses(query.nodeId, body);
+        return await this.nodeAccessPolicyService.updateGroupsAccesses(query.nodeId, body);
     }
 }

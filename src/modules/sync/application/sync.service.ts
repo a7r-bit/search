@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmployeesParserService } from '../../employees-parser/application/employees-parser.service';
-import { PoliticService } from '../../politic/application/politic.service';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import { UserProvisioningService } from '../../user-provisioning/application/user-provisioning.service';
 
@@ -9,7 +8,6 @@ export class SyncService {
     private readonly logger = new Logger(SyncService.name);
     constructor(
         private readonly employeesParserService: EmployeesParserService,
-        private readonly politicService: PoliticService,
         private readonly prisma: PrismaService,
         private readonly userProvisioningService: UserProvisioningService,
     ) {}

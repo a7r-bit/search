@@ -4,6 +4,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
 import path from 'path';
+import * as https from 'https';
 
 export type Prefix = 'original' | 'converted';
 
@@ -32,7 +33,11 @@ export class S3Service {
                 secretAccessKey: this.secretKey,
             },
             ...(this.endpoint ? { endpoint: this.endpoint, forcePathStyle: true } : {}),
-            requestHandler: new NodeHttpHandler(),
+            requestHandler: new NodeHttpHandler({
+                httpsAgent: new https.Agent({
+                    rejectUnauthorized: false,
+                }),
+            }),
         });
     }
 

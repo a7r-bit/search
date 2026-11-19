@@ -5,7 +5,8 @@ import { status } from '@grpc/grpc-js';
 import { DocumentVersionService } from '../../document-version/application/document-version.service';
 import { GetFileUrlResponse } from '../presentation/file-provider.dto';
 import { NodeService } from '../../node/application/node.service';
-import { PoliticService } from '../../politic/application/politic.service';
+import { GroupService } from '../../politic/application/group.service';
+import { NodeAccessPolicyService } from '../../politic/application/node-access-policy.service';
 import { isUUID } from 'class-validator';
 
 @Injectable()
@@ -14,7 +15,8 @@ export class FileProviderService {
         private readonly s3Service: S3Service,
         private readonly documentVersionService: DocumentVersionService,
         private readonly nodeService: NodeService,
-        private readonly politicService: PoliticService,
+        private readonly groupService: GroupService,
+        private readonly nodeAccessPolicyService: NodeAccessPolicyService,
     ) {}
 
     async getFileUrl(documentVersionId: string, expiresIn: number = 3600): Promise<GetFileUrlResponse> {
@@ -58,8 +60,8 @@ export class FileProviderService {
 
             const documentVersion = await this.documentVersionService.findOneById(documentVersionId);
             const node = await this.nodeService.findById(documentVersion.nodeId);
-            const userPoliticGroups = await this.politicService.getPoliticsByTabNumber(tabNumber);
-            const hasAccess = await this.politicService.checkUserToNodeAccess(
+            const userPoliticGroups = await this.groupService.getPoliticsByTabNumber(tabNumber);
+            const hasAccess = await this.nodeAccessPolicyService.checkUserToNodeAccess(
                 userPoliticGroups.map((group) => group.id),
                 node.id,
             );

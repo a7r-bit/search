@@ -3,7 +3,7 @@ import { UserService } from '../../user/application/user.service';
 import { RoleService } from '../../role/application/role.service';
 import { PayloadDTO } from '../../token/presentation/dto/payload.dto';
 import { TokenService } from '../../token/application/token.service';
-import { PoliticService } from '../../politic/application/politic.service';
+import { GroupService } from '../../politic/application/group.service';
 import { EmployeesParserService } from '../../employees-parser/application/employees-parser.service';
 import { UserProvisioningService } from '../../user-provisioning/application/user-provisioning.service';
 import { RequestUser } from '../../../shared/domain/types/request-user';
@@ -16,7 +16,7 @@ export class AuthService {
         private readonly userService: UserService,
         private readonly roleService: RoleService,
         private readonly tokenService: TokenService,
-        private readonly groupService: PoliticService,
+        private readonly groupService: GroupService,
         private readonly employeesService: EmployeesParserService,
         private readonly userProvisioningService: UserProvisioningService,
     ) {}
