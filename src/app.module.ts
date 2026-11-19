@@ -29,8 +29,6 @@ import { UserService } from './modules/user/application/user.service';
 import { ROLE_RESOLVER } from './shared/domain/interfaces/role-resolver.interface';
 import { TOKEN_VERIFIER } from './shared/domain/interfaces/token-verifier.interface';
 import { USER_PROVIDER } from './shared/domain/interfaces/user-provider.interface';
-import { FILE_STORAGE } from './shared/domain/interfaces/file-storage.interface';
-import { S3Service } from './shared/infrastructure/s3/s3.service';
 
 @Module({
     imports: [
@@ -57,7 +55,6 @@ import { S3Service } from './shared/infrastructure/s3/s3.service';
     controllers: [AppController],
     providers: [
         AppService,
-        { provide: FILE_STORAGE, useExisting: S3Service },
         { provide: TOKEN_VERIFIER, useExisting: TokenService },
         { provide: ROLE_RESOLVER, useExisting: RoleService },
         { provide: USER_PROVIDER, useExisting: UserService },
